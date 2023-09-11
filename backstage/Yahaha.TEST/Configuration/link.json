@@ -1,0 +1,10 @@
+{
+  "$schema": "https://gitee.com/dotnetchina/Furion/raw/v4/schemas/v4/furion-schema.json",
+
+  "MES": {
+    "Server": {
+      "DbType": "Oracle",
+      "BaseUrl": "User Id=JZMES;Password=Utmes123456;Data Source=192.168.110.172:1521/MES;"
+    }
+  }
+}

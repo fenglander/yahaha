@@ -1,0 +1,12 @@
+[program:Yahaha] #程序名称
+command=dotnet Yahaha.Web.Entry.dll --urls=http://*:5001  #要执行的命令 Flower_Api是程序名称 并指定端口
+
+directory=/home/ub/yahaha #命令执行的目录
+environment=ASPNETCORE__ENVIRONMENT=Production #环境变量
+user=root  #进程执行的用户身份
+stopsignal=INT
+autostart=true #是否自动启动
+autorestart=true #是否自动重启
+startsecs=1 #自动重启间隔
+stderr_logfile=/var/log/yahaha.err.log #标准错误日志
+stdout_logfile=/var/log/yahaha.out.log #标准输出日志

@@ -1,0 +1,17 @@
+{
+    "$schema": "https://gitee.com/dotnetchina/Furion/raw/v4/schemas/v4/furion-schema.json",
+
+  "Ldap": {
+    "Ldaps": [
+      {
+        "TenantId": 1300000000001, // 对应租户
+        "Domain": "ut.cn", // 域名称
+        "Host": "192.168.100.2", // 域服务器地址
+        "BaseDC": "OU=UT01{优特科技},DC=UT,DC=CN", //根据上面的域服务器地址，每个点拆分为一个DC，例如上面的apac.contoso.com，拆分后就是DC=apac,DC=contoso,DC=com
+        "Port": "389", //域服务器端口，一般默认就是389
+        "DomainAdminUser": "UTIMSQA", //域管理员账号用户名，如果只是验证登录用户，不对域做修改，可以就是登录用户名
+        "DomainAdminPassword": "IMSqaut2023." //域管理员账号密码，如果只是验证登录用户，不对域做修改，可以就是登录用户的密码
+      }
+    ]
+  }
+}

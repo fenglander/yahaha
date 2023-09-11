@@ -1,0 +1,25 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="Utu9.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="UtU9.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Yahaha.Core\Yahaha.Core.csproj" />
+    <ProjectReference Include="..\Plugins\UT.TPlus\UT.TPlus.csproj" />
+    <ProjectReference Include="..\Yahaha.Plugin.Tools\Yahaha.Plugin.CommonTool.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,8 @@
+{
+  "$schema": "https://gitee.com/dotnetchina/Furion/raw/v4/schemas/v4/furion-schema.json",
+
+  "UtMes": {
+    "DbType": "Oracle", // MySql、SqlServer、Sqlite、Oracle、PostgreSQL、Dm、Kdbndp、Oscar、MySqlConnector、Access、OpenGauss、QuestDB、HG、ClickHouse、GBase、Odbc、Custom
+    "ConnectionString": "User Id=JZMES;Password=Utmes123456;Data Source=192.168.110.169:1521/MES;" // 库连接字符串
+  }
+}
