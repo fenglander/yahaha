@@ -11,6 +11,7 @@ declare module 'vue-plugin-hiprint';
 declare module 'vuedraggable-es'
 declare module 'md5'
 declare module 'vue-signature-pad'
+declare module 'clipboard'
 
 // 声明一个模块，防止引入文件时报错
 declare module '*.json';

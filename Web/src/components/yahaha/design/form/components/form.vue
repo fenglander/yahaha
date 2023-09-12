@@ -29,7 +29,7 @@
     provide
   } from 'vue'
   import type { FormData, FormList } from '../../types'
-  import { getRequest } from '@/api'
+  import { getRequest } from '/@/api/model/form';
   import { useRoute, useRouter } from 'vue-router'
   import { ElMessage } from 'element-plus'
   import {
@@ -39,10 +39,10 @@
     constControlChange,
     constFormProps,
     appendOrRemoveStyle
-  } from '../../utils'
-  import formatResult from '@/utils/formatResult'
-  import formChangeValue from '@/utils/formChangeValue'
-  import { jsonParseStringify } from '@/utils'
+  } from '../../utils/utils'
+  import formatResult from '../../utils/formatResult'
+  import formChangeValue from '../../utils/formChangeValue'
+  import { jsonParseStringify } from '../../utils'
 
   const props = withDefaults(
     defineProps<{

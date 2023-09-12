@@ -41,10 +41,12 @@
       :total="tableParams.total" :page-sizes="[10, 20, 50, 100]" small="" background="" @size-change="handleSizeChange"
       @current-change="handleCurrentChange" layout="total, sizes, prev, pager, next, jumper" />
 
-    <el-drawer v-model="dialog.visible" size="50%">
+    <el-drawer v-model="dialog.visible" size="100%">
+      <div style="margin: 10px;">
 
-      <yForm ref="formEl" :formData="dialog.formData" :type="dialog.type" addUrl="dictSave" editUrl="dictEdit"
-        :beforeSubmit="beforeSubmit" :afterSubmit="afterSubmit" @btn-click="cancelClick" />
+        <yForm ref="formEl" :formData="dialog.formData" :type="dialog.type" addUrl="dictSave" editUrl="dictEdit"
+          :beforeSubmit="beforeSubmit" :afterSubmit="afterSubmit" @btn-click="cancelClick" />
+      </div>
     </el-drawer>
   </el-card>
 </template>
@@ -54,7 +56,7 @@ import { onMounted, PropType, ref, watch, reactive } from 'vue';
 import yForm from './yForm.vue';
 import yColumn from './yColumn.vue';
 import ySearchItem from './search/ySearchItem.vue';
-import { generalListData } from '/@/api/model/table';
+import { generalListData } from '/@/api/model/list';
 import { SysFields, fieldFilter } from '/@/api-services/models';
 const props = defineProps({
   model: String as PropType<string>,
@@ -261,7 +263,7 @@ const compParams = () => {
       if (typeof tempFilters === 'string') {
         tempFilters = [tempFilters];
       }
-      console.log("#21", tempFilters);
+      //console.log("#21", tempFilters);
       item.filters = tempFilters.map((str: any) => {
         if (typeof str === 'string' && str.length > 0) {
           return JSON.parse(str);
@@ -281,12 +283,9 @@ const fetchData = async () => {
   var res = await generalListData(Object.assign(queryParams.value, tableParams.value));
   tableData.value = res.data.result?.items ?? [];
   tableParams.value.total = res.data.result?.total;
-  fields.value = res.data.result?.fields.filter((item: any) => item.description !== null && item.description.trim() !== "")
+  fields.value = res.data.result?.fields.filter((item: any) => item.description !== null && item.description.trim() !== "" && item.navigatType == null)
     .map((item: any) => ({
-      name: item.name,
-      description: item.description,
-      tType: item.tType,
-      navigatType: item.navigatType,
+      ...item as SysFields,
     })) as SysFields[];
 
   if (filterParams.value.length === 0) {

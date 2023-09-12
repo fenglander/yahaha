@@ -54,9 +54,9 @@
   import { computed, ref, watch, inject } from 'vue'
   import { FormData, FormList } from '../../types'
   import UseTemplate from './template.vue'
-  import { getRequest } from '@/api'
-  import { stringToObj } from '@/utils/form'
-  import { jsonParseStringify } from '@/utils'
+  import { getRequest } from '/@/api/model/form';
+  import { stringToObj } from '../../utils/form'
+  import { jsonParseStringify } from '../../utils'
 
   const props = withDefaults(
     defineProps<{

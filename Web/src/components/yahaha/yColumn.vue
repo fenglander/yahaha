@@ -23,7 +23,7 @@ const getComponentType = (field: any) => {
     if (field.tType === 'Boolean') {
         return yBool as any;
     } else if (field.navigatType === 'OneToMany') {
-        return yText as any;
+        return yTable as any;
     }
     else {
         return yText as any;

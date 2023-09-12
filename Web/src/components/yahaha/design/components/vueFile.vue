@@ -1,10 +1,5 @@
 <template>
-  <el-dialog
-    v-model="visible"
-    title="导出vue文件"
-    class="export-dialog"
-    width="80%"
-  >
+  <el-dialog v-model="visible" title="导出vue文件" class="export-dialog" width="80%">
     <div id="editJsonCopy"></div>
     <template #footer>
       <div class="dialog-footer">
@@ -20,25 +15,25 @@
 </template>
 
 <script lang="ts" setup>
-  import { ref, nextTick } from 'vue'
-  import Clipboard from 'clipboard'
-  import { ElMessage } from 'element-plus'
-  import { aceEdit } from '../utils'
-  import { objToStringify } from '@/utils/form'
+import { ref, nextTick } from 'vue'
+import Clipboard from 'clipboard'
+import { ElMessage } from 'element-plus'
+import { aceEdit } from '../utils/utils'
+import { objToStringify } from '../utils/form'
 
-  const visible = ref(false)
-  const editor = ref()
-  // 根据生成的json提取需要导入的组件，远程方法，检验方法
-  const getObjHtml = (obj: any) => {
-    let rulesMethods = ''
-    const sourceFun = ''
-    obj &&
-      obj.list.forEach((item: any) => {
-        if (item.customRules?.length) {
-          // 使用自定义校验方法
-          item.customRules.forEach((c: any) => {
-            if (c.type === 'methods' && c.methods) {
-              rulesMethods += `// todo 请完善${item.item.label}校验方法
+const visible = ref(false)
+const editor = ref()
+// 根据生成的json提取需要导入的组件，远程方法，检验方法
+const getObjHtml = (obj: any) => {
+  let rulesMethods = ''
+  const sourceFun = ''
+  obj &&
+    obj.list.forEach((item: any) => {
+      if (item.customRules?.length) {
+        // 使用自定义校验方法
+        item.customRules.forEach((c: any) => {
+          if (c.type === 'methods' && c.methods) {
+            rulesMethods += `// todo 请完善${item.item.label}校验方法
   provide("${c.methods}", (rule, value, callback) => {
     if (value === '') {
       callback(new Error('Please input the password again'))
@@ -48,41 +43,41 @@
       callback()
     }
   })`
-            }
-          })
-        }
-        /*if (item.config?.optionsType === 2 && item.config?.optionsFun) {
-      // 单选多选下拉等方法设值
-      // const optionsValue = ref([{label: "选项1", value: '1'}])
-      // provide("getCheckbox", optionsValue)
-      sourceFun += `// todo ${item.item.label}设置选项值\n`
-      sourceFun += `　const ${item.name}Option = ref([{label: "选项1", value: '1'}])\n`
-      sourceFun += `　provide("${item.config.optionsFun}", ${item.name}Option)\n`
-    }*/
-      })
-    return {
-      rulesMethods: rulesMethods,
-      sourceFun: sourceFun
-    }
+          }
+        })
+      }
+      /*if (item.config?.optionsType === 2 && item.config?.optionsFun) {
+    // 单选多选下拉等方法设值
+    // const optionsValue = ref([{label: "选项1", value: '1'}])
+    // provide("getCheckbox", optionsValue)
+    sourceFun += `// todo ${item.item.label}设置选项值\n`
+    sourceFun += `　const ${item.name}Option = ref([{label: "选项1", value: '1'}])\n`
+    sourceFun += `　provide("${item.config.optionsFun}", ${item.name}Option)\n`
+  }*/
+    })
+  return {
+    rulesMethods: rulesMethods,
+    sourceFun: sourceFun
   }
-  const open = (obj: any) => {
-    visible.value = true
-    const getHtml = getObjHtml(obj)
-    const { addUrl, editUrl, requestUrl } = obj.config
-    if (requestUrl) {
-      // 从obj里删除使用props方式
-      delete obj.config.requestUrl
-    }
-    if (editUrl) {
-      // 从obj里删除使用props方式
-      delete obj.config.editUrl
-    }
-    if (addUrl) {
-      // 从obj里删除使用props方式
-      delete obj.config.addUrl
-    }
+}
+const open = (obj: any) => {
+  visible.value = true
+  const getHtml = getObjHtml(obj)
+  const { addUrl, editUrl, requestUrl } = obj.config
+  if (requestUrl) {
+    // 从obj里删除使用props方式
+    delete obj.config.requestUrl
+  }
+  if (editUrl) {
+    // 从obj里删除使用props方式
+    delete obj.config.editUrl
+  }
+  if (addUrl) {
+    // 从obj里删除使用props方式
+    delete obj.config.addUrl
+  }
 
-    const html = `<template>
+  const html = `<template>
   <div>
     <ak-form
       ref="formNameEl"
@@ -113,31 +108,31 @@
   }
 
 <\/script>`
-    nextTick(() => {
-      editor.value = aceEdit(html, 'editJsonCopy', 'html')
-    })
+  nextTick(() => {
+    editor.value = aceEdit(html, 'editJsonCopy', 'html')
+  })
+}
+// 打开弹窗，导出表格数据
+const openTable = (obj: any) => {
+  const openDialog = obj.config?.openType === 'dialog'
+  const dialogWidth = obj.config?.dialogWidth || '600px'
+  const requestUrl = obj.config?.requestUrl
+  if (requestUrl) {
+    // 从obj里删除使用props方式
+    delete obj.config.requestUrl
   }
-  // 打开弹窗，导出表格数据
-  const openTable = (obj: any) => {
-    const openDialog = obj.config?.openType === 'dialog'
-    const dialogWidth = obj.config?.dialogWidth || '600px'
-    const requestUrl = obj.config?.requestUrl
-    if (requestUrl) {
-      // 从obj里删除使用props方式
-      delete obj.config.requestUrl
-    }
-    const deleteUrl = obj.config?.deleteUrl
-    if (deleteUrl) {
-      // 从obj里删除使用props方式
-      delete obj.config.deleteUrl
-    }
-    let formHtml = ''
-    let formContent = ''
-    let listBtn = ''
-    if (openDialog) {
-      // 弹窗打开
-      listBtn = `@btn-click="listBtnClick"`
-      formHtml = `<el-dialog
+  const deleteUrl = obj.config?.deleteUrl
+  if (deleteUrl) {
+    // 从obj里删除使用props方式
+    delete obj.config.deleteUrl
+  }
+  let formHtml = ''
+  let formContent = ''
+  let listBtn = ''
+  if (openDialog) {
+    // 弹窗打开
+    listBtn = `@btn-click="listBtnClick"`
+    formHtml = `<el-dialog
       destroy-on-close
       v-model="dialog.visible"
       :title="dialog.title"
@@ -156,7 +151,7 @@
         @btn-click="dialogBtnClick"
       ></ak-form>
     </el-dialog>`
-      formContent = `const formEl = ref()
+    formContent = `const formEl = ref()
   // todo 表单数据可从设计表单导出vue文件或保存生成脚本
   const formData = ref({list:[],form:{},config:{}})
   const dialog = reactive({
@@ -220,9 +215,9 @@
     }
   }
 `
-    }
-    visible.value = true
-    const html = `<template>
+  }
+  visible.value = true
+  const html = `<template>
   <div>
     <ak-list
       ref="tableListEl"
@@ -246,33 +241,33 @@
   const tableData = ref(${objToStringify(obj)})
   ${formContent}
 <\/script>`
-    nextTick(() => {
-      editor.value = aceEdit(html, 'editJsonCopy', 'html')
-    })
-  }
-  const openScreen = (obj: any) => {
-    visible.value = true
-    let styleCss = ''
-    let globalData = ''
-    let globalImport = ''
-    const style = obj.config.style
-    if (style) {
-      styleCss = `<style>
+  nextTick(() => {
+    editor.value = aceEdit(html, 'editJsonCopy', 'html')
+  })
+}
+const openScreen = (obj: any) => {
+  visible.value = true
+  let styleCss = ''
+  let globalData = ''
+  let globalImport = ''
+  const style = obj.config.style
+  if (style) {
+    styleCss = `<style>
 ${style}
 <\/style>`
-    }
-    if (obj.config.requestUrl) {
-      // 全局大屏数据
-      globalImport = `import { getGlobalData } from '@/views/design/dataScreen/getData'`
-      globalData = `const globalScreen = ref({})
+  }
+  if (obj.config.requestUrl) {
+    // 全局大屏数据
+    globalImport = `import { getGlobalData } from '@/views/design/dataScreen/getData'`
+    globalData = `const globalScreen = ref({})
   provide('globalScreen', globalScreen)
   const {requestUrl, afterResponse, beforeRequest, method} = screenData.value.config
   getGlobalData(requestUrl, afterResponse, beforeRequest, method)
   .then((res: any) => {
        globalScreen.value = res
    })`
-    }
-    const html = `<template>
+  }
+  const html = `<template>
   <div :style="screenStyle" class="design-canvas">
     <ak-screen
       v-for="(element, index) in screenData.list"
@@ -300,45 +295,45 @@ ${style}
   ${globalData}
 <\/script>
 ${styleCss}`
-    nextTick(() => {
-      editor.value = aceEdit(html, 'editJsonCopy', 'html')
-    })
-  }
-
-  const copyData = (e: any) => {
-    nextTick(() => {
-      const clipboard: any = new Clipboard(e.target, {
-        text: () => {
-          return editor.value.getValue()
-        }
-      })
-      clipboard.on('success', function () {
-        ElMessage({
-          message: '复制成功！',
-          type: 'success'
-        })
-        clipboard.destroy()
-      })
-      clipboard.on('error', function () {
-        ElMessage.error('复制失败')
-        clipboard.destroy()
-      })
-      clipboard.onClick(e)
-    })
-  }
-  // 导出文件
-  const dialogExport = () => {
-    const content = 'data:text/csv;charset=utf-8,' + editor.value?.getValue()
-    const fileName = new Date().getTime() + '.vue'
-    const encodedUri = encodeURI(content)
-    const actions = document.createElement('a')
-    actions.setAttribute('href', encodedUri)
-    actions.setAttribute('download', fileName)
-    actions.click()
-  }
-  defineExpose({
-    open,
-    openTable,
-    openScreen
+  nextTick(() => {
+    editor.value = aceEdit(html, 'editJsonCopy', 'html')
   })
+}
+
+const copyData = (e: any) => {
+  nextTick(() => {
+    const clipboard: any = new Clipboard(e.target, {
+      text: () => {
+        return editor.value.getValue()
+      }
+    })
+    clipboard.on('success', function () {
+      ElMessage({
+        message: '复制成功！',
+        type: 'success'
+      })
+      clipboard.destroy()
+    })
+    clipboard.on('error', function () {
+      ElMessage.error('复制失败')
+      clipboard.destroy()
+    })
+    clipboard.onClick(e)
+  })
+}
+// 导出文件
+const dialogExport = () => {
+  const content = 'data:text/csv;charset=utf-8,' + editor.value?.getValue()
+  const fileName = new Date().getTime() + '.vue'
+  const encodedUri = encodeURI(content)
+  const actions = document.createElement('a')
+  actions.setAttribute('href', encodedUri)
+  actions.setAttribute('download', fileName)
+  actions.click()
+}
+defineExpose({
+  open,
+  openTable,
+  openScreen
+})
 </script>

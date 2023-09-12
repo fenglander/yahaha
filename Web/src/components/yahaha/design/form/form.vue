@@ -18,10 +18,10 @@
 <script setup lang="ts">
   import { ref, reactive, onMounted, computed, nextTick } from 'vue'
   import { useRoute, useRouter } from 'vue-router'
-  import { getRequest } from '@/api'
+  import { getRequest } from '/@/api/model/form';
   import { ElMessage } from 'element-plus'
-  import { string2json, stringToObj } from '@/utils/form'
-  import { useLayoutStore } from '@/store/layout'
+  import { string2json, stringToObj } from '../utils/form'
+  import { useLayoutStore } from '../store/layout'
   const layoutStore = useLayoutStore()
   const route = useRoute().query
   const router = useRouter()

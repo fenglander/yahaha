@@ -21,7 +21,10 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Dynamic;
 using Yahaha.Core.Models.Entity;
+using Microsoft.AspNetCore.Mvc;
+using System.Collections.Generic;
 using Yahaha.Core.Service.Role.Dto;
+using static SKIT.FlurlHttpClient.Wechat.Api.Models.CgibinMessageDeviceSubscribeSendRequest.Types;
 using static SKIT.FlurlHttpClient.Wechat.Api.Models.CgibinUserInfoBatchGetRequest.Types;
 
 namespace Yahaha.Core.Service;
@@ -65,9 +68,49 @@ public class ModelsService : IDynamicApiController, ITransient
     /// <param name="model"></param>
     /// <returns></returns>
     [DisplayName("获取字段列表")]
-    public async Task<List<SysFields>> GetFieldList(string model)
+    public async Task<List<SysFields>> getFieldList(string model)
+    {
+        var list = await GetUserTableViewFields(model);
+
+        return list;
+    }
+
+    /// <summary>
+    /// 获取字段设置信息
+    /// </summary>
+    /// <param name="id"></param>
+    /// <returns></returns>
+    [DisplayName("获取字段设置信息")]
+    [HttpGet]
+    public async Task<List<SysFields>> getFieldInfo(long id)
     {
         // 配置缓存
+        var cacheKey = $"Models/getFieldInfo,id:{id}";
+        List<SysFields> list = new List<SysFields>();
+
+        if (!_cache.TryGetValue(cacheKey, out list))
+        {
+            // 如果缓存中没有值，则执行数据库查询
+            list = await _db.Queryable<SysFields>()
+               .Includes(x => x.SysModels)
+               .Where(x => x.Id == id)
+               .ToListAsync();
+
+            // 将查询结果添加到缓存中
+            _cache.Set(cacheKey, list);
+        }
+
+        return list;
+    }
+
+    /// <summary>
+    /// 获取用户表字段设置
+    /// </summary>
+    /// <param name="model"></param>
+    /// <returns></returns>
+    [HttpGet]
+    public async Task<List<SysFields>> GetUserTableViewFields(string model)
+    {
         var cacheKey = $"GetFieldList,Model:{model}";
         List<SysFields> list = new List<SysFields>();
 
@@ -82,42 +125,7 @@ public class ModelsService : IDynamicApiController, ITransient
             // 将查询结果添加到缓存中
             _cache.Set(cacheKey, list);
         }
-
         return list;
-    }
-
-    /// <summary>
-    /// 获取关系字段
-    /// </summary>
-    /// <param name="model"></param>
-    /// <param name="ResList">结果</param>
-    /// <param name="Lv">阶</param>
-    /// <returns></returns>
-    public async Task<List<SysFields>> GetRelFields(string model,List<SysFields> ResList, int Lv = 0)
-    {
-        var TempList = await _db.Queryable<SysFields>()
-           .Includes(x => x.SysModels)
-           .Where(x => x.SysModels.Model == model && x.RelFieldName != null && x.RelFieldName != "")
-           .ToListAsync();
-        if(TempList != null && TempList.Count > 0)
-        {
-            foreach (var item in TempList)
-            {
-                if (!ResList.Any(it => it.Id == item.Id))
-                {
-                    ResList.Add(item);
-                    ResList = await GetRelFields(item.tType, ResList, Lv);
-                }
-            }
-        }
-
-        return ResList;
-    }
-
-    public async Task<List<SysFields>> GetUserTableViewFields(string model)
-    {
-        var FieldList = await GetFieldList(model);
-        return FieldList;
     }
 
     /// <summary>
@@ -176,11 +184,48 @@ public class ModelsService : IDynamicApiController, ITransient
         return res;
     }
 
+    /// <summary>
+    /// 测试表单接口
+    /// </summary>
+    /// <returns></returns>
+    public List<ExpandoObject> getSourceListByFormDesign()
+    {
+        var expandoList = new List<ExpandoObject>();
+
+
+        var expando = new ExpandoObject() as IDictionary<string, object>;
+        // 模拟数据
+        List<ExpandoObject> dataList = new List<ExpandoObject>
+        {
+            CreateExpandoObject(1, 1, null, "", 14, "请假", "请假流程", "ak-holidays", null),
+            CreateExpandoObject(0, 1, null, "admin", 13, "客户信息管理", "客户信息管理", "ak-customer", null),
+            CreateExpandoObject(0, 1, null, "admin", 12, "组件字段示例", "组件字段示例", "ak-test", null)
+        };
+
+        ExpandoObject CreateExpandoObject(int category, int status, DateTime? createDate, string creatName,
+            int id, string name, string remark, string tableName, DateTime? updateDate)
+        {
+            dynamic expando = new ExpandoObject();
+            expando.category = category;
+            expando.status = status;
+            expando.creatDate = createDate;
+            expando.creatName = creatName;
+            expando.id = id;
+            expando.name = name;
+            expando.remark = remark;
+            expando.tableName = tableName;
+            expando.updateDate = updateDate;
+            return expando;
+        }
+
+        return dataList;
+    }
+
 
     public async Task<List<ExpandoObject>> DrillDownData(DrillDownDataDto Params)
     {
         var expandoList = new List<ExpandoObject>();
-        var FieldList = await GetFieldList(Params.model);
+        var FieldList = await getFieldList(Params.model);
         List<dynamic> TempValueList;
         if (Params.items != null)
         {

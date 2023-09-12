@@ -50,7 +50,8 @@
 		"xlsx-js-style": "^1.2.0",
 		"vuedraggable-es": "^4.1.1",
 		"md5": "^2.3.0",
-		"js-beautify": "^1.14.7"
+		"js-beautify": "^1.14.7",
+		"clipboard": "^2.0.8"
 	},
 	"devDependencies": {
 		"@types/lodash-es": "^4.17.8",

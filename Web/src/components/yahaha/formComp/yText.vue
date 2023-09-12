@@ -1,8 +1,10 @@
 <template>
-    <el-popover placement="top-end" popper-class="el-popover-self" :width="popoverWidth" :visible="isPopover" :content="internalValue" :fallback-placements="['bottom', 'top', 'right', 'left']">
+    <el-popover  popper-class="el-popover-self" :width="popoverWidth" :visible="isPopover"
+        :content="getvalue()" :fallback-placements="['bottom', 'top', 'right', 'left']">
         <template #reference>
-            <div ref="ytext"  class="member-label member-span text-hidden" @mouseenter="visibilityChange($event)" @mouseleave="() => isPopover = false">
-                <span>{{ internalValue }}</span>
+            <div ref="ytext" class="member-label member-span text-hidden" @mouseenter="visibilityChange($event)"
+                @mouseleave="() => isPopover = false">
+                <span>{{ getvalue() }}</span>
             </div>
 
         </template>
@@ -10,7 +12,7 @@
 </template>
   
 <script setup lang="ts">
-import { defineComponent, PropType, ref, toRefs } from 'vue';
+import { onMounted, PropType, ref, toRefs } from 'vue';
 import { SysFields } from '/@/api-services/models';
 const isPopover = ref(false);
 const popoverWidth = ref(200);
@@ -25,10 +27,19 @@ const props = defineProps({
         required: true,
     },
 });
-const row  = toRefs(props.modelValue);
-const fieldInfo = toRefs(props.field);
-//console.log(props.modelValue[props.field.name]);
-const internalValue = ref(props.modelValue[props.field.name]);
+const propsValue = ref((props.modelValue[props.field.name]));
+
+
+
+const getvalue = () => {
+    var internalValue = "-";
+    if (propsValue.value !== null) {
+        internalValue = propsValue.value.toString();
+        // 现在可以安全地使用 stringValue
+    } else {
+    }
+    return internalValue;
+};
 
 const visibilityChange = (event: any) => {
     const ev = event.target;
@@ -47,7 +58,6 @@ const visibilityChange = (event: any) => {
         isPopover.value = false;
     }
 };
-
 </script>
 <style>
 .text-hidden {
@@ -57,7 +67,7 @@ const visibilityChange = (event: any) => {
 }
 
 .el-popover-self {
-  min-width: 30px!important;
-  padding: 0;
+    min-width: 30px !important;
+    padding: 0;
 }
 </style>

@@ -301,7 +301,6 @@
                     raw-content
                   >
                     <el-icon>
-                      <QuestionFilled />
                     </el-icon>
                   </el-tooltip>
                 </el-button>
@@ -328,9 +327,6 @@
               @click="openAttrDialog('', state.tooltip.props)"
               >编辑属性
               <el-tooltip :content="state.tooltip.props" placement="top">
-                <el-icon>
-                  <QuestionFilled />
-                </el-icon>
               </el-tooltip>
             </el-button>
           </div>
@@ -379,7 +375,6 @@
                 placement="top"
               >
                 <el-icon>
-                  <QuestionFilled />
                 </el-icon>
               </el-tooltip>
             </template>
@@ -395,7 +390,6 @@
               >编辑表单样式
               <el-tooltip :content="state.tooltip.css" placement="top">
                 <el-icon>
-                  <QuestionFilled />
                 </el-icon>
               </el-tooltip>
             </el-button>
@@ -403,7 +397,6 @@
               >设置数据字典
               <el-tooltip :content="state.tooltip.dict" placement="top">
                 <el-icon>
-                  <QuestionFilled />
                 </el-icon>
               </el-tooltip>
             </el-button>
@@ -480,7 +473,7 @@
 <script lang="ts" setup>
   import { reactive, computed, toRefs, ref, watch, inject } from 'vue'
   //import { useRoute } from 'vue-router'
-  import { getRequest } from '/@/api/model/form';
+  import { getRequest, sourceListByFormDesign } from '/@/api/model/form';
   import { useDesignFormStore } from '../../store/designForm'
   import validate from './validate'
   import { ElMessage } from 'element-plus'
@@ -1505,8 +1498,10 @@
   const getDataSource = () => {
     // 获取数据源，表单设计才加载，搜索设置不需要
     if (!state.isSearch) {
-      getRequest('sourceList').then((res: any) => {
-        dataSourceOption.value = res.data.list
+      // getRequest('sourceList').then((res: any) => {
+      // })
+      sourceListByFormDesign().then((res: any) => {
+        dataSourceOption.value = res.data.result;
         //dataSourceOption.value.unshift({ name: '无', id: '' })
       })
     }
