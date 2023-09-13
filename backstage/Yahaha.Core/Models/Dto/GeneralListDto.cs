@@ -24,7 +24,10 @@ public class GeneralListRes : SqlSugarPagedList<ExpandoObject>
     /// 字段信息
     /// </summary>
     public List<SysFields> fields { get; set; }
-
+    /// <summary>
+    /// 查询方案
+    /// </summary>
+    public List<UserFilterScheme> userFilterSchemes { get; set; }
 }
 
 public class fieldFilter

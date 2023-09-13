@@ -1,16 +1,34 @@
 <template>
-  <el-card v-loading="paramsLoading" shadow="hover" :body-style="{ paddingBottom: '0' }">
+  <el-card v-loading="paramsLoading" shadow="hover" :body-style="{ padding: '10px 10px' }">
     <el-form ref="queryForm" :inline="true">
-      <el-form-item v-if="showParamsComponent" v-for="field in filterParams" :key="field.name" :label="field.description">
-        <y-search-item :field="field" v-model="field.filters" />
-      </el-form-item>
+      <div class="yhh-search-collapse-style">
+        <el-collapse>
+        <el-collapse-item title="更多" name="1">
+          <el-form-item v-if="showParamsComponent" v-for="field in filterParams" :key="field.name"
+            :label="field.description">
+            <template v-if="!field.default">
+              <y-search-item :field="field" v-model="field.filters" />
+            </template>
+          </el-form-item>
+          
+        <el-form-item label="设置默认条件">
+          <el-select multiple collapse-tags @change="setFilterParams" placeholder="请选择" v-model="defualtQueryFields">
+            <el-option v-for="item in filterParams" :key="item.name" :label="item.description" :value="item.name" />
+          </el-select>
+        </el-form-item>
+        </el-collapse-item>
+      </el-collapse>
+      </div>
+      
 
-      <el-form-item>
-        <el-button-group>
-          <el-button type="primary" icon="ele-Search" @click="handleQuery" v-auth="'inventory:page'"> 查询 </el-button>
-          <el-button icon="ele-Refresh" @click="cleanQueryValue"> 重置 </el-button>
-        </el-button-group>
-      </el-form-item>
+      <div style="margin: 10px 0px 0px 0px;">
+        <el-form-item>
+          <el-button-group>
+            <el-button type="primary" icon="ele-Search" @click="handleQuery" v-auth="'inventory:page'"> 查询 </el-button>
+            <el-button icon="ele-Refresh" @click="cleanQueryValue"> 重置 </el-button>
+          </el-button-group>
+        </el-form-item>
+      </div>
     </el-form>
   </el-card>
   <el-card v-loading="loading" ref="y-list" class="yahaha-list full-table" shadow="hover" style="margin-top: 8px">
@@ -41,13 +59,13 @@
       :total="tableParams.total" :page-sizes="[10, 20, 50, 100]" small="" background="" @size-change="handleSizeChange"
       @current-change="handleCurrentChange" layout="total, sizes, prev, pager, next, jumper" />
 
-    <el-drawer v-model="dialog.visible" size="100%">
+    <!-- <el-drawer v-model="dialog.visible" size="100%">
       <div style="margin: 10px;">
 
         <yForm ref="formEl" :formData="dialog.formData" :type="dialog.type" addUrl="dictSave" editUrl="dictEdit"
           :beforeSubmit="beforeSubmit" :afterSubmit="afterSubmit" @btn-click="cancelClick" />
       </div>
-    </el-drawer>
+    </el-drawer> -->
   </el-card>
 </template>
 
@@ -63,6 +81,7 @@ const props = defineProps({
   create: Boolean as PropType<boolean>,
   edit: Boolean as PropType<boolean>,
   del: Boolean as PropType<boolean>,
+  dialog: Object as PropType<any>,
 });
 
 const tableData = ref<any>([]);
@@ -70,7 +89,7 @@ const fields = ref<SysFields[]>([]);
 const loading = ref(false);
 const showParamsComponent = ref(true);
 const paramsLoading = ref(false);
-
+const defualtQueryFields = ref("");
 const filterParams = ref<fieldFilter[]>([]);
 const queryParams = ref<any>
   ({
@@ -83,128 +102,18 @@ const tableParams = ref({
   total: 0,
 });
 
-const dialog = reactive({
-  visible: false,
-  type: 1,
-  editId: '',
-  formData: {
-    list: [
-      {
-        type: 'input',
-        control: {
-          modelValue: '',
-          placeholder: '请输入字典名称'
-        },
-        config: {},
-        name: 'name',
-        item: {
-          label: '字典名称'
-        },
-        customRules: [
-          {
-            type: 'required',
-            message: '请输入字典名称',
-            trigger: 'blur'
-          }
-        ]
-      },
-      {
-        type: 'input',
-        control: {
-          modelValue: '',
-          placeholder: '请输入字典标识'
-        },
-        config: {
-          editDisabled: true
-        },
-        name: 'type',
-        item: {
-          label: '字典标识'
-        },
-        customRules: [
-          {
-            type: 'required',
-            message: '请输入字典标识',
-            trigger: 'blur'
-          }
-        ]
-      },
-      {
-        type: 'radio',
-        control: {
-          modelValue: 1
-        },
-        options: [
-          {
-            label: '正常',
-            value: 1
-          },
-          {
-            label: '停用',
-            value: 0
-          }
-        ],
-        config: {
-          optionsType: 0
-        },
-        name: 'status',
-        item: {
-          label: '状态'
-        }
-      },
-      {
-        type: 'textarea',
-        control: {
-          modelValue: ''
-        },
-        config: {},
-        name: 'remark',
-        item: {
-          label: '说明描述'
-        }
-      },
-      {
-        type: 'button',
-        control: {
-          label: '保存',
-          type: 'primary',
-          key: 'submit'
-        },
-        config: {
-          span: 0
-        }
-      },
-      {
-        type: 'button',
-        control: {
-          label: '取消',
-          key: 'reset'
-        },
-        config: {
-          span: 0
-        }
-      }
-    ],
-    form: {
-      labelWidth: '',
-      size: 'default'
-    },
-    config: {}
-  }
-});
-
 const beforeSubmit = (params: any) => {
-  params.id = dialog.editId // 添加编辑id
+  params.id = props.dialog.editId // 添加编辑id
   return params
 };
 const afterSubmit = () => {
-  dialog.visible = false;
+  props.dialog.visible = false;
   fetchData(); // 重新拉数据
 };
 
 const cancelClick = (type: string) => {
   if (type === 'reset') {
-    dialog.visible = false
+    props.dialog.visible = false
   }
 }
 
@@ -223,7 +132,7 @@ const handleQuery = () => {
 };
 
 const openAdd = () => {
-  dialog.visible = true;
+  props.dialog.visible = true;
 };
 
 const createfilterParams = () => {
@@ -234,6 +143,11 @@ const createfilterParams = () => {
     name: item.name,
     tType: item.tType,
   })) as fieldFilter[];
+};
+
+const setFilterParams = (value: any) => {
+  // 清理临时数据
+  console.log(value);
 };
 
 const cleanQueryValue = () => {
@@ -321,6 +235,11 @@ onMounted(() => {
   height: calc(100% - 85px);
   /* 使用视窗高度的80%作为组件的高度 */
 
+}
+.yhh-search-collapse-style{
+  .el-collapse-item__header{
+    height:24px;
+  }
 }
 </style>
 

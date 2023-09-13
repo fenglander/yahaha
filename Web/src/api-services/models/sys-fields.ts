@@ -130,5 +130,6 @@ export interface fieldFilter {
     description: string;
     tType: string;
     filters?: any;
+    default:false;
   };
   

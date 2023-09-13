@@ -26,6 +26,7 @@ using System.Collections.Generic;
 using Yahaha.Core.Service.Role.Dto;
 using static SKIT.FlurlHttpClient.Wechat.Api.Models.CgibinMessageDeviceSubscribeSendRequest.Types;
 using static SKIT.FlurlHttpClient.Wechat.Api.Models.CgibinUserInfoBatchGetRequest.Types;
+using Microsoft.AspNetCore.Identity;
 
 namespace Yahaha.Core.Service;
 
@@ -35,13 +36,21 @@ namespace Yahaha.Core.Service;
 [ApiDescriptionSettings(Order = 460)]
 public class ModelsService : IDynamicApiController, ITransient
 {
+    private readonly IdentityService _identitySvc;
+    private readonly UserManager _userManager;
     private readonly SqlSugarRepository<SysModels> _sysModels;
     private readonly SqlSugarRepository<SysFields> _sysFields;
     private readonly ISqlSugarClient _db;
     private static readonly ICache _cache = Cache.Default;
 
-    public ModelsService(SqlSugarRepository<SysModels> sysModels, SqlSugarRepository<SysFields> sysFields, ISqlSugarClient db)
+    public ModelsService(SqlSugarRepository<SysModels> sysModels,
+        SqlSugarRepository<SysFields> sysFields,
+        IdentityService identityService,
+        UserManager userManager,
+        ISqlSugarClient db)
     {
+        _identitySvc = identityService;
+        _userManager = userManager;
         _sysModels = sysModels;
         _sysFields = sysFields;
         _db = db;
@@ -129,6 +138,49 @@ public class ModelsService : IDynamicApiController, ITransient
     }
 
     /// <summary>
+    /// 获取用户筛选字段信息
+    /// </summary>
+    /// <param name="model"></param>
+    /// <returns></returns>
+    public async Task<List<UserFilterScheme>> GetUserFilterSchemes(string model)
+    {
+        List<UserFilterScheme> list = new List<UserFilterScheme>();
+        list = await _db.Queryable<UserFilterScheme>()
+            .Includes(x => x.SysModels)
+            .Where(x => x.SysModels.Model == model && x.CreateUserId == _userManager.UserId)
+            .ToListAsync();
+        //如果没有值则生成一个默认的，选name和code作为筛选条件
+        if (list == null || list.Count() == 0)
+        {
+            
+        }
+
+        return list;
+    }
+
+    /// <summary>
+    /// 创建用户筛选配置
+    /// </summary>
+    /// <param name="input"></param>
+    /// <returns></returns>
+    /// <exception cref="Exception"></exception>
+    public async Task<int> CreateUserFilterSchemes(UserFilterScheme input)
+    {
+        int res = 0;
+        try
+        {
+            res = await _db.Insertable(input).ExecuteCommandAsync();
+
+        }catch (Exception ex)
+        {
+            throw new Exception(ex.Message);
+        }
+
+        if(res >0) { return res; } else { throw new Exception("更新失败"); }
+    }
+
+
+    /// <summary>
     /// 通用列表数据接口
     /// </summary>
     /// <param name="input"></param>
@@ -137,7 +189,10 @@ public class ModelsService : IDynamicApiController, ITransient
     {
         
         var Fields = await GetUserTableViewFields(input.model);
-        if(input.model == null)
+
+        var FilterSchemes = await GetUserFilterSchemes(input.model);
+
+        if (input.model == null)
         {
             throw new Exception("请输入正确表名");
         }
@@ -180,6 +235,7 @@ public class ModelsService : IDynamicApiController, ITransient
             HasNextPage = Raw.HasNextPage,
             Items = expandoList,
             fields = Fields,
+            userFilterSchemes = FilterSchemes,
         };
         return res;
     }
