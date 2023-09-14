@@ -2,29 +2,38 @@
   <el-card v-loading="paramsLoading" shadow="hover" :body-style="{ padding: '10px 10px' }">
     <el-form ref="queryForm" :inline="true">
       <div class="yhh-search-collapse-style">
-        <el-collapse>
-        <el-collapse-item title="更多" name="1">
-          <el-form-item v-if="showParamsComponent" v-for="field in filterParams" :key="field.name"
-            :label="field.description">
-            <template v-if="!field.default">
-              <y-search-item :field="field" v-model="field.filters" />
-            </template>
-          </el-form-item>
-          
-        <el-form-item label="设置默认条件">
-          <el-select multiple collapse-tags @change="setFilterParams" placeholder="请选择" v-model="defualtQueryFields">
-            <el-option v-for="item in filterParams" :key="item.name" :label="item.description" :value="item.name" />
-          </el-select>
+        <el-form-item v-if="showParamsComponent" v-for="field in primaryFilterParams" :key="field.name"
+          :label="field.description">
+          <template v-if="!field.default">
+            <y-search-item :field="field" v-model="field.filters" />
+          </template>
         </el-form-item>
-        </el-collapse-item>
-      </el-collapse>
+        <el-collapse v-model="collapseParam.activeName">
+          <el-collapse-item name="1">
+            <el-form-item v-if="showParamsComponent" v-for="field in filterParams" :key="field.name"
+              :label="field.description">
+              <template v-if="!field.default">
+                <y-search-item :field="field" v-model="field.filters" />
+              </template>
+            </el-form-item>
+
+            <el-form-item class="select-primary-filter" label="设置默认条件">
+              <el-select multiple collapse-tags @visible-change="setFilterParams" placeholder="请选择"
+                v-model="primaryFields">
+                <el-option v-for="item in fields" :key="item.name" :label="item.description" :value="item.name" />
+              </el-select>
+            </el-form-item>
+          </el-collapse-item>
+        </el-collapse>
       </div>
-      
+
 
       <div style="margin: 10px 0px 0px 0px;">
         <el-form-item>
           <el-button-group>
             <el-button type="primary" icon="ele-Search" @click="handleQuery" v-auth="'inventory:page'"> 查询 </el-button>
+            <el-button icon="ele-ZoomIn" @click="changeCollapseState" v-auth="'inventory:page'"> {{ collapseParam.butName
+            }} </el-button>
             <el-button icon="ele-Refresh" @click="cleanQueryValue"> 重置 </el-button>
           </el-button-group>
         </el-form-item>
@@ -74,8 +83,11 @@ import { onMounted, PropType, ref, watch, reactive } from 'vue';
 import yForm from './yForm.vue';
 import yColumn from './yColumn.vue';
 import ySearchItem from './search/ySearchItem.vue';
-import { generalListData } from '/@/api/model/list';
-import { SysFields, fieldFilter } from '/@/api-services/models';
+import * as api from '/@/api/model/list';
+import { ElNotification, collapseProps } from 'element-plus'
+import { SysFields, fieldFilter, userFilterSchemes } from '/@/api-services/models';
+import { debounce } from 'lodash-es';
+
 const props = defineProps({
   model: String as PropType<string>,
   create: Boolean as PropType<boolean>,
@@ -86,11 +98,17 @@ const props = defineProps({
 
 const tableData = ref<any>([]);
 const fields = ref<SysFields[]>([]);
+const filterSchemes = ref<userFilterSchemes[]>([]);
+const primaryFilterParams = ref<fieldFilter[]>([]);
+const filterParams = ref<fieldFilter[]>([]);
 const loading = ref(false);
 const showParamsComponent = ref(true);
 const paramsLoading = ref(false);
-const defualtQueryFields = ref("");
-const filterParams = ref<fieldFilter[]>([]);
+const collapseParam = ref({
+  activeName: "",
+  butName: "更多",
+});
+const primaryFields = ref([] as string[]);
 const queryParams = ref<any>
   ({
     model: props.model,
@@ -135,9 +153,26 @@ const openAdd = () => {
   props.dialog.visible = true;
 };
 
+const changeCollapseState = () => {
+  if (collapseParam.value.activeName === "") {
+    collapseParam.value.activeName = "1";
+    collapseParam.value.butName = "收起";
+  } else {
+    collapseParam.value.activeName = "";
+    collapseParam.value.butName = "更多";
+  }
+};
+
 const createfilterParams = () => {
-  // 清理临时数据
-  filterParams.value = fields.value.map((item: any) => ({
+  // 创建筛选字段信息
+
+  primaryFilterParams.value = fields.value.filter((item) => primaryFields.value.includes(item.name)).map((item: any) => ({
+    id: item.id,
+    description: item.description,
+    name: item.name,
+    tType: item.tType,
+  })) as fieldFilter[];
+  filterParams.value = fields.value.filter((item) => !primaryFields.value.includes(item.name)).map((item: any) => ({
     id: item.id,
     description: item.description,
     name: item.name,
@@ -145,9 +180,11 @@ const createfilterParams = () => {
   })) as fieldFilter[];
 };
 
-const setFilterParams = (value: any) => {
-  // 清理临时数据
-  console.log(value);
+const setFilterParams = async (visible: any) => {
+  // 上传查询方案
+  if (visible) { return; }
+  createfilterParams();
+  await createUserFilterSchemesDebounce();
 };
 
 const cleanQueryValue = () => {
@@ -163,21 +200,42 @@ const cleanQueryValue = () => {
   }, 100); // 使用setTimeout来触发重新加载，确保Vue能够正确处理更新
 };
 
+const createUserFilterSchemesDebounce = debounce(
+  async function () {
+    var id = 0;
+    if(filterSchemes.value.length>0){
+      id = filterSchemes.value[0].id;
+    }
+    var params = {
+      id: id,
+      name: "默认",
+      tableName: props.model,
+      defaultFields: JSON.stringify(primaryFields.value) as String,
+    }
+    var res = await api.createUserFilterSchemes(params);
+    if (res.status === 200) {
+      ElNotification({
+        title: '成功',
+        message: ('查询方案已保存'),
+        type: 'success',
+      })
+    }
+  },
+  1000
+);
+
 const showActions = () => {
   return props.create || props.edit || props.del;
 };
-
+//组合查询条件
 const compParams = () => {
-
-  filterParams.value.forEach((item: any) => {
-
+  const combinedFilters = [...primaryFilterParams.value, ...filterParams.value];
+  combinedFilters.forEach((item: any) => {
     if (item.filters !== null && item.filters !== undefined) {
-
       let tempFilters = item.filters;
       if (typeof tempFilters === 'string') {
         tempFilters = [tempFilters];
       }
-      //console.log("#21", tempFilters);
       item.filters = tempFilters.map((str: any) => {
         if (typeof str === 'string' && str.length > 0) {
           return JSON.parse(str);
@@ -185,28 +243,32 @@ const compParams = () => {
         return str; // 如果已经是对象，直接返回
       });
     }
-
-  })
-  queryParams.value.filters = filterParams.value;
+  });
+  queryParams.value.filters = combinedFilters;
 };
 
 const fetchData = async () => {
   loading.value = true;
   compParams();
 
-  var res = await generalListData(Object.assign(queryParams.value, tableParams.value));
+  var res = await api.generalListData(Object.assign(queryParams.value, tableParams.value));
   tableData.value = res.data.result?.items ?? [];
   tableParams.value.total = res.data.result?.total;
   fields.value = res.data.result?.fields.filter((item: any) => item.description !== null && item.description.trim() !== "" && item.navigatType == null)
     .map((item: any) => ({
       ...item as SysFields,
     })) as SysFields[];
-
+  // 读取默认查询字段
+  filterSchemes.value = res.data.result?.userFilterSchemes;
+  if (filterSchemes.value.length > 0) {
+    var defaultuserFilterScheme = filterSchemes.value[filterSchemes.value.length - 1];
+    primaryFields.value = JSON.parse(defaultuserFilterScheme.defaultFields);
+  };
+  loading.value = false;
+  // 初始化查询条件
   if (filterParams.value.length === 0) {
     createfilterParams();
   };
-
-  loading.value = false;
 };
 
 // 改变页码序号
@@ -236,9 +298,34 @@ onMounted(() => {
   /* 使用视窗高度的80%作为组件的高度 */
 
 }
-.yhh-search-collapse-style{
-  .el-collapse-item__header{
-    height:24px;
+
+.yhh-search-collapse-style {
+
+  .el-collapse-item__content {
+    padding: 10px 0px;
+  }
+
+  .el-form-item--small {
+    margin-bottom: 9px;
+
+  }
+
+  .el-form-item--default {
+    margin-bottom: 9px;
+  }
+
+  .el-collapse-item__header {
+    height: 0px;
+  }
+
+  .el-collapse-item__arrow {
+    display: none
+  }
+
+  .select-primary-filter{
+    .el-form-item__label{
+      color: var(--el-color-primary);
+    }
   }
 }
 </style>

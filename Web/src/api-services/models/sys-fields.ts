@@ -130,6 +130,20 @@ export interface fieldFilter {
     description: string;
     tType: string;
     filters?: any;
-    default:false;
-  };
-  
+    default: false;
+};
+export interface userFilterSchemes {
+    name: string,
+    tableName: string,
+    modelId: number,
+    sysModels: any,
+    defaultFields: string,
+    defaultFilter: string,
+    default: boolean,
+    createTime: any,
+    updateTime: any,
+    createUserId: any | null,
+    updateUserId: any | null,
+    isDelete: boolean,
+    id: number
+}

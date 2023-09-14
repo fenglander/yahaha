@@ -27,6 +27,7 @@ using Yahaha.Core.Service.Role.Dto;
 using static SKIT.FlurlHttpClient.Wechat.Api.Models.CgibinMessageDeviceSubscribeSendRequest.Types;
 using static SKIT.FlurlHttpClient.Wechat.Api.Models.CgibinUserInfoBatchGetRequest.Types;
 using Microsoft.AspNetCore.Identity;
+using Furion.RemoteRequest;
 
 namespace Yahaha.Core.Service;
 
@@ -147,7 +148,7 @@ public class ModelsService : IDynamicApiController, ITransient
         List<UserFilterScheme> list = new List<UserFilterScheme>();
         list = await _db.Queryable<UserFilterScheme>()
             .Includes(x => x.SysModels)
-            .Where(x => x.SysModels.Model == model && x.CreateUserId == _userManager.UserId)
+            .Where(x => x.TableName == model && x.CreateUserId == _userManager.UserId)
             .ToListAsync();
         //如果没有值则生成一个默认的，选name和code作为筛选条件
         if (list == null || list.Count() == 0)
@@ -164,12 +165,13 @@ public class ModelsService : IDynamicApiController, ITransient
     /// <param name="input"></param>
     /// <returns></returns>
     /// <exception cref="Exception"></exception>
+    [HttpPost("createUserFilterSchemes")]
     public async Task<int> CreateUserFilterSchemes(UserFilterScheme input)
     {
         int res = 0;
         try
         {
-            res = await _db.Insertable(input).ExecuteCommandAsync();
+            res = await _db.Storageable(input).ExecuteCommandAsync();
 
         }catch (Exception ex)
         {

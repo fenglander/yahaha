@@ -6,7 +6,7 @@
   </div>
 </template>
 
-<script setup lang="ts" name="inventory">
+<script setup lang="ts">
   import { ref, onMounted, reactive } from 'vue';
   import yList from '/@/components/yahaha/yList.vue';
   const internalValue = ref("");

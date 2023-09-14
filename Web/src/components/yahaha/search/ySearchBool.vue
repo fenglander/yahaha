@@ -36,12 +36,6 @@ const comparisons = ref([
 
 const updateValue = (newValue: any) => {
     emit('update:modelValue', newValue);
-    
-    //let curr = newValue[newValue.length - 1]
-
-    //const valueToMove = comparisons.value.find((option) => option.value === curr);
-
-    //cleanNewValue();
 
     ysearchbool.value.blur();
     ysearchbool.value.focus();
