@@ -69,7 +69,7 @@
     (e: 'click', value: FormData): void
   }>()
   const designType = inject('formDesignType') as string
-  const formDataList = ref([])
+  const formDataList = ref<any>([]);
   // 默认搜索允许显示的字段
   const searchField = [
     'input',
@@ -118,7 +118,7 @@
   )
   // 加载当前列表所属的表单，从表单中提取可用于搜索的字段
   const getFormField = (formId: number) => {
-    getRequest('designById', { id: formId }).then((res: any) => {
+    getRequest('designById', { 'id': formId }).then((res: any) => {
       const data = stringToObj(res.data.data)
       if (data && data.list) {
         forEachGetData(data.list)

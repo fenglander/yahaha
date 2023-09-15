@@ -69,7 +69,7 @@ const props = withDefaults(
         },
         isSearch: false
     }
-)
+);
 const emits = defineEmits<{
     (e: 'btnClick', type: string): void
     (e: 'change', val: any): void // 表单组件值发生变化时
@@ -324,7 +324,7 @@ const getData = (params = {}) => {
         return
     }
     getRequest(requestUrl, newParams2 ?? newParams)
-        .then((res : any) => {
+        .then((res: any) => {
             // console.log(res)
             loading.value = false
             const result = res.data
@@ -399,7 +399,7 @@ const submit = (params = {}) => {
                 .then((res: any) => {
                     afterSubmit('success', res)
                 })
-                .catch((res : any) => {
+                .catch((res: any) => {
                     afterSubmit('fail', res)
                 })
         } else {

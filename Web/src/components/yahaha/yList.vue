@@ -1,21 +1,20 @@
 <template>
   <el-card v-loading="paramsLoading" shadow="hover" :body-style="{ padding: '10px 10px' }">
     <el-form ref="queryForm" :inline="true">
-      <div class="yhh-search-collapse-style">
-        <el-form-item v-if="showParamsComponent" v-for="field in primaryFilterParams" :key="field.name"
-          :label="field.description">
+      <div v-if="showParamsComponent" class="yhh-search-collapse-style">
+        <el-form-item v-for="field in primaryFilterParams" :key="field.name" :label="field.description">
           <template v-if="!field.default">
             <y-search-item :field="field" v-model="field.filters" />
           </template>
         </el-form-item>
         <el-collapse v-model="collapseParam.activeName">
           <el-collapse-item name="1">
-            <el-form-item v-if="showParamsComponent" v-for="field in filterParams" :key="field.name"
-              :label="field.description">
+            <el-form-item v-for="field in filterParams" :key="field.name" :label="field.description">
               <template v-if="!field.default">
                 <y-search-item :field="field" v-model="field.filters" />
               </template>
             </el-form-item>
+
 
             <el-form-item class="select-primary-filter" label="设置默认条件">
               <el-select multiple collapse-tags @visible-change="setFilterParams" placeholder="请选择"
@@ -68,32 +67,36 @@
       :total="tableParams.total" :page-sizes="[10, 20, 50, 100]" small="" background="" @size-change="handleSizeChange"
       @current-change="handleCurrentChange" layout="total, sizes, prev, pager, next, jumper" />
 
-    <!-- <el-drawer v-model="dialog.visible" size="100%">
+    <el-drawer v-model="formDrawer.visible" size="100%">
       <div style="margin: 10px;">
-
-        <yForm ref="formEl" :formData="dialog.formData" :type="dialog.type" addUrl="dictSave" editUrl="dictEdit"
-          :beforeSubmit="beforeSubmit" :afterSubmit="afterSubmit" @btn-click="cancelClick" />
+        <component :is="getComponent()" ref="formEl" :formData="props.formData" :type="1" addUrl="dictSave"
+          editUrl="dictEdit" :beforeSubmit="beforeSubmit" :afterSubmit="afterSubmit" />
       </div>
-    </el-drawer> -->
+    </el-drawer>
   </el-card>
 </template>
 
 <script setup lang="ts">
-import { onMounted, PropType, ref, watch, reactive } from 'vue';
+import { onMounted, PropType, ref } from 'vue';
 import yForm from './yForm.vue';
 import yColumn from './yColumn.vue';
 import ySearchItem from './search/ySearchItem.vue';
 import * as api from '/@/api/model/list';
-import { ElNotification, collapseProps } from 'element-plus'
+import { ElNotification } from 'element-plus'
 import { SysFields, fieldFilter, userFilterSchemes } from '/@/api-services/models';
 import { debounce } from 'lodash-es';
+import type { FormData } from './design/types'
 
 const props = defineProps({
   model: String as PropType<string>,
   create: Boolean as PropType<boolean>,
   edit: Boolean as PropType<boolean>,
   del: Boolean as PropType<boolean>,
-  dialog: Object as PropType<any>,
+  formComp: {
+    type: Object,
+    required: false,
+  },
+  formData: Object as PropType<FormData>,
 });
 
 const tableData = ref<any>([]);
@@ -108,6 +111,10 @@ const collapseParam = ref({
   activeName: "",
   butName: "更多",
 });
+const formDrawer = ref({
+  visible: false,
+  editId: "",
+});
 const primaryFields = ref([] as string[]);
 const queryParams = ref<any>
   ({
@@ -120,20 +127,24 @@ const tableParams = ref({
   total: 0,
 });
 
+const getComponent = () => {
+  if (props.formComp) {
+    return props.formComp as any;
+  } else {
+    return yForm as any;
+  }
+};
+
 const beforeSubmit = (params: any) => {
-  params.id = props.dialog.editId // 添加编辑id
+  params.id = formDrawer.value.editId // 添加编辑id
   return params
 };
 const afterSubmit = () => {
-  props.dialog.visible = false;
+  formDrawer.value.visible = false;
   fetchData(); // 重新拉数据
 };
 
-const cancelClick = (type: string) => {
-  if (type === 'reset') {
-    props.dialog.visible = false
-  }
-}
+
 
 // 动态表单相关结束
 
@@ -150,7 +161,7 @@ const handleQuery = () => {
 };
 
 const openAdd = () => {
-  props.dialog.visible = true;
+  formDrawer.value.visible = true;
 };
 
 const changeCollapseState = () => {
@@ -203,7 +214,7 @@ const cleanQueryValue = () => {
 const createUserFilterSchemesDebounce = debounce(
   async function () {
     var id = 0;
-    if(filterSchemes.value.length>0){
+    if (filterSchemes.value.length > 0) {
       id = filterSchemes.value[0].id;
     }
     var params = {
@@ -263,12 +274,12 @@ const fetchData = async () => {
   if (filterSchemes.value.length > 0) {
     var defaultuserFilterScheme = filterSchemes.value[filterSchemes.value.length - 1];
     primaryFields.value = JSON.parse(defaultuserFilterScheme.defaultFields);
-  };
+  }
   loading.value = false;
   // 初始化查询条件
   if (filterParams.value.length === 0) {
     createfilterParams();
-  };
+  }
 };
 
 // 改变页码序号
@@ -322,8 +333,8 @@ onMounted(() => {
     display: none
   }
 
-  .select-primary-filter{
-    .el-form-item__label{
+  .select-primary-filter {
+    .el-form-item__label {
       color: var(--el-color-primary);
     }
   }

@@ -1,10 +1,9 @@
 <template>
-    <component :field="field" :is="getComponentType(field)" />
+    <component :field="props.field" :is="getComponentType(props.field)" />
 </template>
   
 <script setup lang="ts">
-import { defineComponent, PropType, ref, watch } from 'vue';
-import yInput from '/@/components/yahaha/formComp/yInput.vue';
+import {  PropType,  } from 'vue';
 import yBool from '/@/components/yahaha/formComp/yBool.vue';
 import yText from '/@/components/yahaha/formComp/yText.vue';
 import yTable from '/@/components/yahaha/formComp/yTable.vue';
