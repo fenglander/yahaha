@@ -6,14 +6,20 @@ namespace Yahaha.WMS;
 public class Inventory : EntityBase
 {
 
-    [SugarColumn(ColumnDescription = "Completed Quantity")]
+    [YhhColumn(ColumnDescription = "Completed Quantity", DecimalDigits = 7)]
     public float qty_operation_wip { get; set; }
 
-    [SugarColumn(ColumnDescription = "Code")]
-    public string? code { get; set; }
+    [YhhColumn(ColumnDescription = "Code")]
+    public string? Code { get; set; }
     
-    [SugarColumn(ColumnDescription = "单位")]
+    [YhhColumn(ColumnDescription = "单位")]
     public int? Unit { get; set; }
 
+    [YhhColumn(ColumnDescription = "名称",Display = true)]
+    public string? Name { get; set; }
 
+    [YhhColumn(ColumnDescription = "受控")]
+    public bool Audit { get; set; }
+    [YhhColumn(ColumnDescription = "规格")]
+    public string? Spce { get; set; }
 }

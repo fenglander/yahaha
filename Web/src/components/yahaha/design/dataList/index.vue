@@ -318,7 +318,7 @@
 <script setup lang="ts">
   import { reactive, ref, nextTick, onMounted, computed } from 'vue'
   import HeadTools from '../components/headTools.vue'
-  import DesignForm from '../form/components/form.vue'
+  import DesignForm from '../form/components/formRenderer.vue'
   import VueFile from '../components/vueFile.vue'
   import AceDrawer from '../components/aceDrawer.vue'
   import TableList from './components/list.vue'

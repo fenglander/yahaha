@@ -31,7 +31,7 @@
 <script lang="ts" setup>
   import { onMounted, inject, computed, nextTick } from 'vue'
   import FormItem from './formItem.vue'
-  import { constFormProps } from '../../utils/utils'
+  import { constFormProps } from '../../utils/'
 
   const props = withDefaults(
     defineProps<{

@@ -58,6 +58,14 @@ const setLockScreen = computed(() => {
 // 	needUpdate.value = true;
 // }, 60000);
 
+// const key = computed(() => {
+// 	if (route.name !== null && route.name !== undefined) {
+// 		return route.name.toString() + new Date()
+// 	} else {
+// 		return route.path.toString() + new Date()
+// 	}
+// })
+
 // 获取全局组件大小
 const getGlobalComponentSize = computed(() => {
 	return other.globalComponentSize();
@@ -93,7 +101,7 @@ onMounted(() => {
 });
 // 页面销毁时，关闭监听布局配置/i18n监听
 onUnmounted(() => {
-	mittBus.off('openSetingsDrawer', () => {});
+	mittBus.off('openSetingsDrawer', () => { });
 });
 // 监听路由的变化，设置网站标题
 watch(

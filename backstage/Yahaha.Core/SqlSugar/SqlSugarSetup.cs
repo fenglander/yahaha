@@ -8,6 +8,7 @@
 // 在任何情况下，作者或版权持有人均不对任何索赔、损害或其他责任负责，无论是因合同、侵权或其他方式引起的，与软件或其使用或其他交易有关。
 
 using Org.BouncyCastle.Asn1.Cms;
+using SqlSugar;
 using System.ComponentModel;
 using Yahaha.Core.Models;
 
@@ -51,6 +52,7 @@ public static class SqlSugarSetup
             InitDatabase(sqlSugar, config);
             //初始化所有模块表结构.Fung
             ModelDbManager.UpdateModelInfo(sqlSugar, config);
+            ModelDbManager.UpdateModelAction(sqlSugar, config);
         });
     }
 
@@ -66,15 +68,21 @@ public static class SqlSugarSetup
             {
                 // entity.IsDisabledDelete = true; // 禁止删除非 sqlsugar 创建的列
                 // 只处理贴了特性[SugarTable]表
-                if (!type.GetCustomAttributes<SugarTable>().Any())
+                if (!type.GetCustomAttributes<SugarTable>().Any() && !type.GetCustomAttributes<YhhTableAttribute>().Any())
                     return;
+                var attribute = type.GetCustomAttribute<YhhTableAttribute>();
+                if (attribute != null)
+                {
+                    entity.DbTableName = type.Name;
+                    entity.TableDescription = attribute.Description;
+                }
                 if (config.EnableUnderLine && !entity.DbTableName.Contains('_'))
                     entity.DbTableName = UtilMethods.ToUnderLine(entity.DbTableName); // 驼峰转下划线
             },
             EntityService = (type, column) => // 处理列
             {
                 // 只处理贴了特性[SugarColumn]列
-                if (!type.GetCustomAttributes<SugarColumn>().Any())
+                if (!type.GetCustomAttributes<SugarColumn>().Any() && !type.GetCustomAttributes<YhhColumn>().Any())
                     return;
                 var attributes = type.GetCustomAttributes<SugarColumn>();
                 if (new NullabilityInfoContext().Create(type).WriteState is NullabilityState.Nullable)
@@ -88,6 +96,27 @@ public static class SqlSugarSetup
                         column.DataType = "number(18)";
                     if (type.PropertyType == typeof(bool) || type.PropertyType == typeof(bool?))
                         column.DataType = "number(1)";
+                }
+                var yahaha = type.GetCustomAttribute<YhhColumn>();
+                if (yahaha != null)
+                {
+                    if (!yahaha.ColumnDescription.IsNullOrEmpty()) { column.ColumnDescription = yahaha.ColumnDescription; }
+                    if (!yahaha.ColumnName.IsNullOrEmpty()) { column.DbColumnName = yahaha.ColumnName; }
+                    if (yahaha.IsIgnore) { column.IsIgnore = yahaha.IsIgnore; }
+                    if (yahaha.Length > 0) { column.Length = yahaha.Length; }
+                    if (yahaha.DecimalDigits > 0) { column.DecimalDigits = yahaha.DecimalDigits; }
+                    if (yahaha.IsJson) { column.IsJson = yahaha.IsJson; }
+                    if (!yahaha.DefaultValue.IsNullOrEmpty()) { column.DefaultValue = yahaha.DefaultValue; }
+                    if (yahaha.RelationalType == RelationalType.ManyToOne) { 
+                        column.DataType = "int8";
+                        column.IsOnlyIgnoreInsert = true;
+                        column.IsOnlyIgnoreUpdate = true;
+                    }
+                    if (yahaha.RelationalType == RelationalType.Relate)
+                    {
+                        column.IsIgnore = true;
+                    }
+                    column.IsNullable = yahaha.NotNull == false;
                 }
                 //if (attributes.Any(it => it is KeyAttribute))// by attribute set primarykey
                 //{
@@ -208,7 +237,7 @@ public static class SqlSugarSetup
             return;
 
         // 配置实体假删除过滤器
-        db.QueryFilter.AddTableFilter<IDeletedFilter>(u => u.IsDelete == false);
+        // db.QueryFilter.AddTableFilter<IDeletedFilter>(u => u.IsDelete == false);
         // 配置租户过滤器
         var tenantId = App.User?.FindFirst(ClaimConst.TenantId)?.Value;
         if (!string.IsNullOrWhiteSpace(tenantId))
@@ -267,7 +296,7 @@ public static class SqlSugarSetup
             dbProvider.DbMaintenance.CreateDatabase();
 
         // 获取所有实体表-初始化表结构
-        var entityTypes = App.EffectiveTypes.Where(u => !u.IsInterface && !u.IsAbstract && u.IsClass && u.IsDefined(typeof(SugarTable), false)).ToList();
+        var entityTypes = App.EffectiveTypes.Where(u => !u.IsInterface && !u.IsAbstract && u.IsClass && (u.IsDefined(typeof(SugarTable), false) || u.IsDefined(typeof(YhhTableAttribute), false))).ToList();
         if (!entityTypes.Any()) return;
         var duplicateTypeNames = entityTypes.GroupBy(type => type.Name)
                                              .Where(group => group.Count() > 1)
@@ -280,8 +309,8 @@ public static class SqlSugarSetup
         foreach (var entityType in entityTypes)
         {
             var tAtt = entityType.GetCustomAttribute<TenantAttribute>();
-            if (tAtt != null && tAtt.configId.ToString() != config.ConfigId) continue;
-            if (tAtt == null && config.ConfigId != SqlSugarConst.ConfigId) continue;
+            if (tAtt != null && tAtt.configId != config.ConfigId) continue;
+            if (tAtt == null && config.ConfigId.ToString() != SqlSugarConst.ConfigId) continue;
 
             if (entityType.GetCustomAttribute<SplitTableAttribute>() == null)
                 dbProvider.CodeFirst.InitTables(entityType);
@@ -305,8 +334,8 @@ public static class SqlSugarSetup
 
             var entityType = seedType.GetInterfaces().First().GetGenericArguments().First();
             var tAtt = entityType.GetCustomAttribute<TenantAttribute>();
-            if (tAtt != null && tAtt.configId.ToString() != config.ConfigId) continue;
-            if (tAtt == null && config.ConfigId != SqlSugarConst.ConfigId) continue;
+            if (tAtt != null && tAtt.configId != config.ConfigId) continue;
+            if (tAtt == null && config.ConfigId.ToString() != SqlSugarConst.ConfigId) continue;
 
             var entityInfo = dbProvider.EntityMaintenance.GetEntityInfo(entityType);
             if (entityInfo.Columns.Any(u => u.IsPrimarykey))

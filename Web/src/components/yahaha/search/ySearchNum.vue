@@ -14,7 +14,7 @@
 </template>
   
 <script setup lang="ts">
-import { PropType, ref, toRefs, onMounted } from 'vue';
+import { PropType, ref, onMounted } from 'vue';
 import { fieldFilter } from '/@/api-services/models';
 const emit = defineEmits(['update:modelValue'])
 const props = defineProps({
@@ -26,12 +26,8 @@ const props = defineProps({
         required: true,
     }
 });
-const { modelValue } = toRefs(props);
-const text = ref(modelValue?.value);
 const selectedValue = ref([] as string[]);
 const ySelect = ref();
-const ysearchnum = 'ysearchnum';
-const Separator = " || "
 const comparisons = ref([
     {
         label: 'new',
@@ -94,7 +90,7 @@ const updateValue = (newValue: any) => {
             value: valueToMove.value,
             disabled: false
         });
-    };
+    }
     cleanNewValue();
 
     ySelect.value.blur();
@@ -104,7 +100,7 @@ const updateValue = (newValue: any) => {
 const updateValueByVisible = (visible: boolean) => {
     if (!visible) {
         cleanNewValue();
-    };
+    }
     //console.log(comparisons);
 };
 
@@ -135,9 +131,7 @@ const cleanTagOption = (tagValue: any) => {
             // 如果找到了，就从数组中删除该对象
             selectedLabel.options.splice(indexToRemove, 1);
         }
-    };
-
-
+    }
 };
 
 

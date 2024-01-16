@@ -10,7 +10,7 @@
 					<SubItem :chil="val.children" />
 				</el-sub-menu>
 				<template v-else>
-					<el-menu-item :index="val.path" :key="val.path">
+					<el-menu-item :index="val.path" :key="val.path" :route="{ path: val.path, query: val.query }">
 						<template #title v-if="!val.meta.isLink || (val.meta.isLink && val.meta.isIframe)">
 							<SvgIcon :name="val.meta.icon" />
 							{{ $t(val.meta.title) }}
@@ -123,17 +123,19 @@ onBeforeRouteUpdate((to) => {
 	flex: 1;
 	overflow: hidden;
 	margin-right: 30px;
+
 	:deep(.el-scrollbar__bar.is-vertical) {
 		display: none;
 	}
+
 	:deep(a) {
 		width: 100%;
 	}
+
 	.el-menu.el-menu--horizontal {
 		display: flex;
 		height: 100%;
 		width: 100%;
 		box-sizing: border-box;
 	}
-}
-</style>
+}</style>

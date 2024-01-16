@@ -1,5 +1,5 @@
 <template>
-  <el-card v-loading="paramsLoading" shadow="hover" :body-style="{ padding: '10px 10px' }">
+  <el-card v-loading="paramsLoading" shadow="hover">
     <el-form ref="queryForm" :inline="true">
       <div v-if="showParamsComponent" class="yhh-search-collapse-style">
         <el-form-item v-for="field in primaryFilterParams" :key="field.name" :label="field.description">
@@ -15,7 +15,6 @@
               </template>
             </el-form-item>
 
-
             <el-form-item class="select-primary-filter" label="设置默认条件">
               <el-select multiple collapse-tags @visible-change="setFilterParams" placeholder="请选择"
                 v-model="primaryFields">
@@ -26,25 +25,30 @@
         </el-collapse>
       </div>
 
-
-      <div style="margin: 10px 0px 0px 0px;">
-        <el-form-item>
+      <div class="yahaha-action-bar">
+        <div class="left">
           <el-button-group>
-            <el-button type="primary" icon="ele-Search" @click="handleQuery" v-auth="'inventory:page'"> 查询 </el-button>
-            <el-button icon="ele-ZoomIn" @click="changeCollapseState" v-auth="'inventory:page'"> {{ collapseParam.butName
-            }} </el-button>
-            <el-button icon="ele-Refresh" @click="cleanQueryValue"> 重置 </el-button>
+            <el-button type="primary" @click="openAdd"> 新增 </el-button>
+            <el-button type="primary" @click="deleteRow()" v-auth="'inventory:add'"> 删除 </el-button>
           </el-button-group>
-        </el-form-item>
+          <div v-if="listSelectCount > 0" class="selected-count">
+            <el-text>{{ listSelectCount }}已选</el-text>
+          </div>
+        </div>
+
+        <el-button-group>
+          <el-button type="primary" icon="ele-Search" @click="handleQuery" > 查询 </el-button>
+          <el-button icon="ele-ZoomIn" @click="changeCollapseState" > {{ collapseParam.butName
+          }} </el-button>
+          <el-button icon="ele-Refresh" @click="cleanQueryValue"> 重置 </el-button>
+        </el-button-group>
       </div>
     </el-form>
   </el-card>
   <el-card v-loading="loading" ref="y-list" class="yahaha-list full-table" shadow="hover" style="margin-top: 8px">
 
-    <div style="margin: 0px 0px 10px 0px;">
-      <el-button type="primary" icon="ele-Plus" @click="openAdd" v-auth="'inventory:add'"> 新增 </el-button>
-    </div>
-    <el-table :data="tableData" tooltip-effect="light" row-key="id" border="" style="width: 100%; height: 100%;">
+    <el-table ref="tableRef" :data="tableData" :key="mainListKey" tooltip-effect="light" row-key="id"
+      @select-all="selectAllAction" @select="selectAction" style="width : 100%; height: 100%;">
       <el-table-column align="center" type="selection" />
       <!-- 根据字段配置渲染表格列 -->
       <el-table-column v-for="field in fields" :key="field.name" :prop="field.name" :label="field.description">
@@ -56,9 +60,9 @@
 
 
       <!-- 创建操作列 -->
-      <el-table-column label="操作" v-if="showActions()">
+      <el-table-column label="操作" fixed="right" align="center" v-if="showActions()">
         <template v-slot="scope">
-          <el-button type="primary" @click="editRow(scope.row)" text>编辑</el-button>
+          <el-button type="primary" @click="Browse(scope.row)" text>查看</el-button>
           <el-button type="primary" @click="deleteRow(scope.row)" text>删除</el-button>
         </template>
       </el-table-column>
@@ -67,28 +71,39 @@
       :total="tableParams.total" :page-sizes="[10, 20, 50, 100]" small="" background="" @size-change="handleSizeChange"
       @current-change="handleCurrentChange" layout="total, sizes, prev, pager, next, jumper" />
 
-    <el-drawer v-model="formDrawer.visible" size="100%">
-      <div style="margin: 10px;">
-        <component :is="getComponent()" ref="formEl" :formData="props.formData" :type="1" addUrl="dictSave"
-          editUrl="dictEdit" :beforeSubmit="beforeSubmit" :afterSubmit="afterSubmit" />
-      </div>
-    </el-drawer>
+    <!-- 个性化组件 -->
+    <component v-if="custComp && formDrawer.visible" :is="getComponent()" :desId="curRow.Id" :close="closeDrawer" />
+    <!-- 需要弹窗 -->
+    <el-dialog v-if="!custComp" v-model="formDrawer.visible" :fullscreen="false" title="1" width="80%" draggable>
+      <formRenderer :form-data="designData.formData" :type="formType" />
+    </el-dialog>
+
   </el-card>
 </template>
 
 <script setup lang="ts">
-import { onMounted, PropType, ref } from 'vue';
-import yForm from './yForm.vue';
+import { onMounted, PropType, ref, nextTick, computed, toRaw } from 'vue';
+import formRenderer from './design/form/components/formRenderer.vue'
 import yColumn from './yColumn.vue';
 import ySearchItem from './search/ySearchItem.vue';
-import * as api from '/@/api/model/list';
+import * as api from '/@/api/model/';
+import { useSysModel } from '/@/stores/sysModel';
+import { useVisualDev } from '/@/stores/visualDev';
 import { ElNotification } from 'element-plus'
 import { SysFields, fieldFilter, userFilterSchemes } from '/@/api-services/models';
 import { debounce } from 'lodash-es';
-import type { FormData } from './design/types'
+import { stringToObj } from '/@/components/yahaha/design/utils/form'
+import router from '/@/router';
 
 const props = defineProps({
-  model: String as PropType<string>,
+  model: {
+    type: String,
+    required: false,
+  },
+  design: {
+    type: Number,
+    required: false,
+  },
   create: Boolean as PropType<boolean>,
   edit: Boolean as PropType<boolean>,
   del: Boolean as PropType<boolean>,
@@ -96,17 +111,27 @@ const props = defineProps({
     type: Object,
     required: false,
   },
-  formData: Object as PropType<FormData>,
 });
-
+const formType = ref(0);
+const designData = ref<any>({
+  id: 0,
+  formData: {}
+});
+const curRow = ref<any>({
+  id: null,
+});
+const tableRef = ref();
 const tableData = ref<any>([]);
 const fields = ref<SysFields[]>([]);
 const filterSchemes = ref<userFilterSchemes[]>([]);
 const primaryFilterParams = ref<fieldFilter[]>([]);
 const filterParams = ref<fieldFilter[]>([]);
+const listSelected = ref<any>([]);
 const loading = ref(false);
 const showParamsComponent = ref(true);
 const paramsLoading = ref(false);
+const mainListKey = ref(0);
+const custComp = ref(false);
 const collapseParam = ref({
   activeName: "",
   butName: "更多",
@@ -116,9 +141,10 @@ const formDrawer = ref({
   editId: "",
 });
 const primaryFields = ref([] as string[]);
+
 const queryParams = ref<any>
   ({
-    model: props.model,
+    model: 0,
     filters: ref<any>
   });
 const tableParams = ref({
@@ -128,41 +154,142 @@ const tableParams = ref({
 });
 
 const getComponent = () => {
-  if (props.formComp) {
-    return props.formComp as any;
+  return props.formComp as any;
+};
+
+
+const listSelectedId = computed(() => {
+  return listSelected.value.map((item: any) => item.Id)
+});
+const listSelectCount = computed(() => {
+  return listSelected.value.length;
+});
+
+/**
+ * 读取表单设计数据
+ */
+const getModel = async () => {
+  if (props.design) {
+    // 根据设计获取
+    // console.log('visualDevList',visualDevList)
+    // stores.setVisualDevList;
+    const res = useVisualDev().getVisualDev(props.design)
+    designData.value.id = props.design;
+    designData.value.formData = stringToObj(res.formData);
+    queryParams.value.model = res.modelId;
   } else {
-    return yForm as any;
+    const res = useSysModel().getSysModels(props.model);
+    console.log(res)
+    queryParams.value.model = res.Id;
   }
 };
 
-const beforeSubmit = (params: any) => {
-  params.id = formDrawer.value.editId // 添加编辑id
-  return params
-};
-const afterSubmit = () => {
+/**
+ * 关闭表单组件
+ */
+const closeDrawer = () => {
+  fetchData();
   formDrawer.value.visible = false;
-  fetchData(); // 重新拉数据
 };
 
 
+const selectAction = async (selection: any, row?: any) => {
+  //console.log('selection', selection, 'row', row, 'selected', selected)
 
-// 动态表单相关结束
+  //是否单选
+  let selected = selection.length && selection.indexOf(row) !== -1
+  if (selected) {
+    listSelected.value.push(row);
+  } else {
+    const indexToRemove: number = listSelectedId.value.indexOf(row.Id);
+    if (indexToRemove !== -1) {
+      // 使用 splice 删除元素
+      listSelected.value.splice(indexToRemove, 1);
+    }
+  }
 
-const editRow = (row: any) => {
-  console.log('编辑行', row);
-};
+}
 
-const deleteRow = (row: any) => {
-  console.log('删除行', row);
+const selectAllAction = (selection: any) => {
+  if (selection.length) {
+    selection.forEach((it: any) => {
+      listSelected.value.push(it);
+    })
+  } else {
+    tableData.value.forEach((it: any) => {
+      const indexToRemove: number = listSelectedId.value.indexOf(it.Id);
+      if (indexToRemove !== -1) {
+        // 使用 splice 删除元素
+        listSelected.value.splice(indexToRemove, 1);
+      }
+    })
+  }
+}
+
+const toggleSelection = () => {
+  nextTick(() => {
+    listSelectedId.value.forEach((id: any) => {
+      const rowToSelect = tableData.value.find((row: any) => row.Id === id);
+      if (rowToSelect) {
+        tableRef.value!.toggleRowSelection(rowToSelect, true)
+      }
+    });
+  });
+
+}
+
+const deleteRow = async (row?: any) => {
+  loading.value = true;
+  let ids = []
+  if (row && row !== null && row !== undefined) {
+    ids.push(row.Id)
+  } else {
+    ids = [...listSelectedId.value]
+  }
+  const params = {
+    model: queryParams.value.model,
+    ids: ids
+  }
+  await api.generalDelete(params);
+  listSelected.value = []
+  await fetchData();
 };
 
 const handleQuery = () => {
   fetchData();
 };
 
-const openAdd = () => {
-  formDrawer.value.visible = true;
+
+//编辑行
+const Browse = (row: any) => {
+  curRow.value = row;
+  if (custComp.value) {
+    formType.value = 2;
+    formDrawer.value.visible = true;
+  } else {
+    navRoute();
+  }
 };
+
+const openAdd = () => {
+  curRow.value.Id = undefined;
+  curRow.value.id = undefined;
+  if (custComp.value) {
+    formType.value = 1;
+    formDrawer.value.visible = true;
+  } else {
+    navRoute();
+  }
+};
+
+const navRoute = () => {
+  formType.value = 1;
+  router.push({
+    name: 'form',
+    query: { visualDev: props.design, id: curRow.value.Id },
+    state: { title: "xxx" }
+  })
+}
 
 const changeCollapseState = () => {
   if (collapseParam.value.activeName === "") {
@@ -215,12 +342,13 @@ const createUserFilterSchemesDebounce = debounce(
   async function () {
     var id = 0;
     if (filterSchemes.value.length > 0) {
-      id = filterSchemes.value[0].id;
+      id = filterSchemes.value[0].Id;
     }
     var params = {
       id: id,
       name: "默认",
       tableName: props.model,
+      modelId: queryParams.value.model,
       defaultFields: JSON.stringify(primaryFields.value) as String,
     }
     var res = await api.createUserFilterSchemes(params);
@@ -260,6 +388,7 @@ const compParams = () => {
 
 const fetchData = async () => {
   loading.value = true;
+  await getModel();
   compParams();
 
   var res = await api.generalListData(Object.assign(queryParams.value, tableParams.value));
@@ -272,14 +401,16 @@ const fetchData = async () => {
   // 读取默认查询字段
   filterSchemes.value = res.data.result?.userFilterSchemes;
   if (filterSchemes.value.length > 0) {
-    var defaultuserFilterScheme = filterSchemes.value[filterSchemes.value.length - 1];
-    primaryFields.value = JSON.parse(defaultuserFilterScheme.defaultFields);
+    var defaultuserFilterScheme = toRaw(filterSchemes.value[filterSchemes.value.length - 1]);
+    primaryFields.value = JSON.parse(defaultuserFilterScheme.DefaultFields);
   }
   loading.value = false;
+  mainListKey.value++;
   // 初始化查询条件
   if (filterParams.value.length === 0) {
     createfilterParams();
   }
+  toggleSelection()
 };
 
 // 改变页码序号
@@ -294,10 +425,13 @@ const handleSizeChange = (val: number) => {
   fetchData();
 };
 
-onMounted(() => {
+onMounted(async () => {
+  if (props.formComp) {
+    custComp.value = true;
+  }
   fetchData();
-})
 
+});
 
 </script>
 
@@ -308,6 +442,25 @@ onMounted(() => {
   height: calc(100% - 85px);
   /* 使用视窗高度的80%作为组件的高度 */
 
+}
+
+.yahaha-action-bar {
+  margin: 10px 0px 0px 0px;
+  display: flex;
+  justify-content: space-between;
+
+  .left {
+    display: flex;
+  }
+
+  .selected-count {
+    margin: 0px 0px 0px 10px;
+    border: 1px solid var(--el-color-primary);
+    background-color: var(--el-color-primary-light-9);
+    border-radius: 3px;
+    display: flex;
+    padding: 3px;
+  }
 }
 
 .yhh-search-collapse-style {

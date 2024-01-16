@@ -93,6 +93,12 @@ export interface UpdateMenuInput {
      */
     redirect?: string | null;
     /**
+     * 应用id
+     * @type {number}
+     * @memberof UpdateMenuInput
+     */
+    visualDevId?: number | null;
+    /**
      * 权限标识
      * @type {string}
      * @memberof UpdateMenuInput
@@ -103,7 +109,7 @@ export interface UpdateMenuInput {
      * @type {string}
      * @memberof UpdateMenuInput
      */
-    icon?: string | null;
+    icon?: string;
     /**
      * 是否内嵌
      * @type {boolean}

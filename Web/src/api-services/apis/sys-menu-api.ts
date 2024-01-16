@@ -372,6 +372,7 @@ export const SysMenuApiFp = function(configuration?: Configuration) {
          */
         async apiSysMenuLoginMenuTreeGet(options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => Promise<AxiosResponse<AdminResultListMenuOutput>>> {
             const localVarAxiosArgs = await SysMenuApiAxiosParamCreator(configuration).apiSysMenuLoginMenuTreeGet(options);
+
             return (axios: AxiosInstance = globalAxios, basePath: string = BASE_PATH) => {
                 const axiosRequestArgs :AxiosRequestConfig = {...localVarAxiosArgs.options, url: basePath + localVarAxiosArgs.url};
                 return axios.request(axiosRequestArgs);

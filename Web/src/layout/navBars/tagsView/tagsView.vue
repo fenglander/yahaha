@@ -2,43 +2,25 @@
 	<div class="layout-navbars-tagsview" :class="{ 'layout-navbars-tagsview-shadow': getThemeConfig.layout === 'classic' }">
 		<el-scrollbar ref="scrollbarRef" @wheel.prevent="onHandleScroll">
 			<ul class="layout-navbars-tagsview-ul" :class="setTagsStyle" ref="tagsUlRef">
-				<li
-					v-for="(v, k) in state.tagsViewList"
-					:key="k"
-					class="layout-navbars-tagsview-ul-li"
-					:data-url="v.url"
-					:class="{ 'is-active': isActive(v) }"
-					@contextmenu.prevent="onContextmenu(v, $event)"
-					@mousedown="onMousedownMenu(v, $event)"
-					@click="onTagsClick(v, k)"
-					:ref="
-						(el) => {
-							if (el) tagsRefs[k] = el;
-						}
-					"
-				>
+				<li v-for="(v, k) in state.tagsViewList" :key="k" class="layout-navbars-tagsview-ul-li" :data-url="v.url"
+					:class="{ 'is-active': isActive(v) }" @contextmenu.prevent="onContextmenu(v, $event)"
+					@mousedown="onMousedownMenu(v, $event)" @click="onTagsClick(v, k)" :ref="(el) => {
+						if (el) tagsRefs[k] = el;
+					}
+						">
 					<i class="iconfont icon-webicon318 layout-navbars-tagsview-ul-li-iconfont" v-if="isActive(v)"></i>
 					<SvgIcon :name="v.meta.icon" v-if="!isActive(v) && getThemeConfig.isTagsviewIcon" class="pr5" />
 					<span>{{ setTagsViewNameI18n(v) }}</span>
 					<template v-if="isActive(v)">
-						<SvgIcon
-							name="ele-RefreshRight"
-							class="ml5 layout-navbars-tagsview-ul-li-refresh"
-							@click.stop="refreshCurrentTagsView($route.fullPath)"
-						/>
-						<SvgIcon
-							name="ele-Close"
-							class="layout-navbars-tagsview-ul-li-icon layout-icon-active"
+						<SvgIcon name="ele-RefreshRight" class="ml5 layout-navbars-tagsview-ul-li-refresh"
+							@click.stop="refreshCurrentTagsView($route.fullPath)" />
+						<SvgIcon name="ele-Close" class="layout-navbars-tagsview-ul-li-icon layout-icon-active"
 							v-if="!v.meta.isAffix"
-							@click.stop="closeCurrentTagsView(getThemeConfig.isShareTagsView ? v.path : v.url)"
-						/>
+							@click.stop="closeCurrentTagsView(getThemeConfig.isShareTagsView ? v.path : v.url)" />
 					</template>
-					<SvgIcon
-						name="ele-Close"
-						class="layout-navbars-tagsview-ul-li-icon layout-icon-three"
+					<SvgIcon name="ele-Close" class="layout-navbars-tagsview-ul-li-icon layout-icon-three"
 						v-if="!v.meta.isAffix"
-						@click.stop="closeCurrentTagsView(getThemeConfig.isShareTagsView ? v.path : v.url)"
-					/>
+						@click.stop="closeCurrentTagsView(getThemeConfig.isShareTagsView ? v.path : v.url)" />
 				</li>
 			</ul>
 		</el-scrollbar>
@@ -132,6 +114,7 @@ const getTagsViewRoutes = async () => {
 };
 // pinia 中获取路由信息：如果是设置了固定的（isAffix），进行初始化显示
 const initTagsView = async () => {
+	// getThemeConfig.value.isCacheTagsView 缓存TagsView开关
 	if (Session.get('tagsViewList') && getThemeConfig.value.isCacheTagsView) {
 		state.tagsViewList = await Session.get('tagsViewList');
 	} else {
@@ -162,6 +145,8 @@ const solveAddTagsView = async (path: string, to?: RouteToFrom) => {
 		// 防止：Avoid app logic that relies on enumerating keys on a component instance. The keys will be empty in production mode to avoid performance overhead.
 		let findItem = state.tagsViewRoutesList.find((v: RouteItem) => v.path === isDynamicPath);
 		if (!findItem) return false;
+		// 还原标题
+		if (to) findItem.meta.title = to?.meta?.title;
 		if (findItem.meta.isAffix) return false;
 		if (findItem.meta.isLink && !findItem.meta.isIframe) return false;
 		to?.meta?.isDynamic ? (findItem.params = to.params) : (findItem.query = to?.query);
@@ -558,11 +543,11 @@ onBeforeMount(() => {
 // 页面卸载时
 onUnmounted(() => {
 	// 取消非本页面调用监听
-	mittBus.off('onCurrentContextmenuClick', () => {});
+	mittBus.off('onCurrentContextmenuClick', () => { });
 	// 取消监听布局配置界面开启/关闭拖拽
-	mittBus.off('openOrCloseSortable', () => {});
+	mittBus.off('openOrCloseSortable', () => { });
 	// 取消监听布局配置开启 TagsView 共用
-	mittBus.off('openShareTagsView', () => {});
+	mittBus.off('openShareTagsView', () => { });
 	// 取消窗口 resize 监听
 	window.removeEventListener('resize', onSortableResize);
 });
@@ -578,6 +563,7 @@ onMounted(() => {
 });
 // 路由更新时（组件内生命钩子）
 onBeforeRouteUpdate(async (to) => {
+
 	state.routeActive = setTagsViewHighlight(to);
 	state.routePath = to.meta.isDynamic ? to.meta.isDynamicPath : to.path;
 	await addTagsView(to.path, <RouteToFrom>to);
@@ -602,9 +588,11 @@ watch(
 	border-bottom: 1px solid var(--next-border-color-light);
 	position: relative;
 	z-index: 4;
+
 	:deep(.el-scrollbar__wrap) {
 		overflow-x: auto !important;
 	}
+
 	&-ul {
 		list-style: none;
 		margin: 0;
@@ -616,6 +604,7 @@ watch(
 		font-size: 12px;
 		white-space: nowrap;
 		padding: 0 15px;
+
 		&-li {
 			height: 26px;
 			line-height: 26px;
@@ -629,16 +618,19 @@ watch(
 			z-index: 0;
 			cursor: pointer;
 			justify-content: space-between;
+
 			&:hover {
 				background-color: var(--el-color-primary-light-9);
 				color: var(--el-color-primary);
 				border-color: var(--el-color-primary-light-5);
 			}
+
 			&-iconfont {
 				position: relative;
 				left: -5px;
 				font-size: 12px;
 			}
+
 			&-icon {
 				border-radius: 100%;
 				position: relative;
@@ -647,18 +639,22 @@ watch(
 				text-align: center;
 				line-height: 14px;
 				right: -5px;
+
 				&:hover {
 					color: var(--el-color-white);
 					background-color: var(--el-color-primary-light-3);
 				}
 			}
+
 			.layout-icon-active {
 				display: block;
 			}
+
 			.layout-icon-three {
 				display: none;
 			}
 		}
+
 		.is-active {
 			color: var(--el-color-white);
 			background: var(--el-color-primary);
@@ -666,6 +662,7 @@ watch(
 			transition: border-color 3s ease;
 		}
 	}
+
 	// 风格4
 	.tags-style-four {
 		.layout-navbars-tagsview-ul-li {
@@ -673,24 +670,30 @@ watch(
 			border: none !important;
 			position: relative;
 			border-radius: 3px !important;
+
 			.layout-icon-active {
 				display: none;
 			}
+
 			.layout-icon-three {
 				display: block;
 			}
+
 			&:hover {
 				background: none !important;
 			}
 		}
+
 		.is-active {
 			background: none !important;
 			color: var(--el-color-primary) !important;
 		}
 	}
+
 	// 风格5
 	.tags-style-five {
 		align-items: flex-end;
+
 		.tags-style-five-svg {
 			-webkit-mask-image: url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNzAiIGhlaWdodD0iNzAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgZmlsbD0ibm9uZSI+CgogPGc+CiAgPHRpdGxlPkxheWVyIDE8L3RpdGxlPgogIDxwYXRoIHRyYW5zZm9ybT0icm90YXRlKC0wLjEzMzUwNiA1MC4xMTkyIDUwKSIgaWQ9InN2Z18xIiBkPSJtMTAwLjExOTE5LDEwMGMtNTUuMjI4LDAgLTEwMCwtNDQuNzcyIC0xMDAsLTEwMGwwLDEwMGwxMDAsMHoiIG9wYWNpdHk9InVuZGVmaW5lZCIgc3Ryb2tlPSJudWxsIiBmaWxsPSIjRjhFQUU3Ii8+CiAgPHBhdGggZD0ibS0wLjYzNzY2LDcuMzEyMjhjMC4xMTkxOSwwIDAuMjE3MzcsMC4wNTc5NiAwLjQ3Njc2LDAuMTE5MTljMC4yMzIsMC4wNTQ3NyAwLjI3MzI5LDAuMDM0OTEgMC4zNTc1NywwLjExOTE5YzAuMDg0MjgsMC4wODQyOCAwLjM1NzU3LDAgMC40NzY3NiwwbDAuMTE5MTksMGwwLjIzODM4LDAiIGlkPSJzdmdfMiIgc3Ryb2tlPSJudWxsIiBmaWxsPSJub25lIi8+CiAgPHBhdGggZD0ibTI4LjkyMTM0LDY5LjA1MjQ0YzAsMC4xMTkxOSAwLDAuMjM4MzggMCwwLjM1NzU3bDAsMC4xMTkxOWwwLDAuMTE5MTkiIGlkPSJzdmdfMyIgc3Ryb2tlPSJudWxsIiBmaWxsPSJub25lIi8+CiAgPHJlY3QgaWQ9InN2Z180IiBoZWlnaHQ9IjAiIHdpZHRoPSIxLjMxMTA4IiB5PSI2LjgzNTUyIiB4PSItMC4wNDE3MSIgc3Ryb2tlPSJudWxsIiBmaWxsPSJub25lIi8+CiAgPHJlY3QgaWQ9InN2Z181IiBoZWlnaHQ9IjEuNzg3ODQiIHdpZHRoPSIwLjExOTE5IiB5PSI2OC40NTY1IiB4PSIyOC45MjEzNCIgc3Ryb2tlPSJudWxsIiBmaWxsPSJub25lIi8+CiAgPHJlY3QgaWQ9InN2Z182IiBoZWlnaHQ9IjQuODg2NzciIHdpZHRoPSIxOS4wNzAzMiIgeT0iNTEuMjkzMjEiIHg9IjM2LjY2ODY2IiBzdHJva2U9Im51bGwiIGZpbGw9Im5vbmUiLz4KIDwvZz4KPC9zdmc+'),
 				url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNzAiIGhlaWdodD0iNzAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgZmlsbD0ibm9uZSI+CiA8Zz4KICA8dGl0bGU+TGF5ZXIgMTwvdGl0bGU+CiAgPHBhdGggdHJhbnNmb3JtPSJyb3RhdGUoLTg5Ljc2MjQgNy4zMzAxNCA1NS4xMjUyKSIgc3Ryb2tlPSJudWxsIiBpZD0ic3ZnXzEiIGZpbGw9IiNGOEVBRTciIGQ9Im02Mi41NzQ0OSwxMTcuNTIwODZjLTU1LjIyOCwwIC0xMDAsLTQ0Ljc3MiAtMTAwLC0xMDBsMCwxMDBsMTAwLDB6IiBjbGlwLXJ1bGU9ImV2ZW5vZGQiIGZpbGwtcnVsZT0iZXZlbm9kZCIvPgogIDxwYXRoIGQ9Im0tMC42Mzc2Niw3LjMxMjI4YzAuMTE5MTksMCAwLjIxNzM3LDAuMDU3OTYgMC40NzY3NiwwLjExOTE5YzAuMjMyLDAuMDU0NzcgMC4yNzMyOSwwLjAzNDkxIDAuMzU3NTcsMC4xMTkxOWMwLjA4NDI4LDAuMDg0MjggMC4zNTc1NywwIDAuNDc2NzYsMGwwLjExOTE5LDBsMC4yMzgzOCwwIiBpZD0ic3ZnXzIiIHN0cm9rZT0ibnVsbCIgZmlsbD0ibm9uZSIvPgogIDxwYXRoIGQ9Im0yOC45MjEzNCw2OS4wNTI0NGMwLDAuMTE5MTkgMCwwLjIzODM4IDAsMC4zNTc1N2wwLDAuMTE5MTlsMCwwLjExOTE5IiBpZD0ic3ZnXzMiIHN0cm9rZT0ibnVsbCIgZmlsbD0ibm9uZSIvPgogIDxyZWN0IGlkPSJzdmdfNCIgaGVpZ2h0PSIwIiB3aWR0aD0iMS4zMTEwOCIgeT0iNi44MzU1MiIgeD0iLTAuMDQxNzEiIHN0cm9rZT0ibnVsbCIgZmlsbD0ibm9uZSIvPgogIDxyZWN0IGlkPSJzdmdfNSIgaGVpZ2h0PSIxLjc4Nzg0IiB3aWR0aD0iMC4xMTkxOSIgeT0iNjguNDU2NSIgeD0iMjguOTIxMzQiIHN0cm9rZT0ibnVsbCIgZmlsbD0ibm9uZSIvPgogIDxyZWN0IGlkPSJzdmdfNiIgaGVpZ2h0PSI0Ljg4Njc3IiB3aWR0aD0iMTkuMDcwMzIiIHk9IjUxLjI5MzIxIiB4PSIzNi42Njg2NiIgc3Ryb2tlPSJudWxsIiBmaWxsPSJub25lIi8+CiA8L2c+Cjwvc3ZnPg=='),
@@ -699,26 +702,31 @@ watch(
 			-webkit-mask-position: right bottom, left bottom, center top;
 			-webkit-mask-repeat: no-repeat;
 		}
+
 		.layout-navbars-tagsview-ul-li {
 			padding: 0 5px;
 			border-width: 15px 27px 15px;
 			border-style: solid;
 			border-color: transparent;
 			margin: 0 -15px;
+
 			.layout-icon-active,
 			.layout-navbars-tagsview-ul-li-iconfont,
 			.layout-navbars-tagsview-ul-li-refresh {
 				display: none;
 			}
+
 			.layout-icon-three {
 				display: block;
 			}
+
 			&:hover {
 				@extend .tags-style-five-svg;
 				background: var(--el-color-primary-light-9);
 				color: unset;
 			}
 		}
+
 		.is-active {
 			@extend .tags-style-five-svg;
 			background: var(--el-color-primary-light-9) !important;
@@ -727,6 +735,7 @@ watch(
 		}
 	}
 }
+
 .layout-navbars-tagsview-shadow {
 	box-shadow: rgb(0 21 41 / 4%) 0px 1px 4px;
 }

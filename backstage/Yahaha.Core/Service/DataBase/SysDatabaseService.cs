@@ -135,7 +135,7 @@ public class SysDatabaseService : IDynamicApiController, ITransient
         if (input.DbColumnInfoList.GroupBy(q => q.DbColumnName).Any(q => q.Count() > 1))
             throw Oops.Oh(ErrorCodeEnum.db1002);
 
-        var config = App.GetOptions<DbConnectionOptions>().ConnectionConfigs.FirstOrDefault(u => u.ConfigId == input.ConfigId);
+        var config = App.GetOptions<DbConnectionOptions>().ConnectionConfigs.FirstOrDefault(u => u.ConfigId.ToString() == input.ConfigId);
 
         input.DbColumnInfoList.ForEach(m =>
         {
@@ -210,7 +210,7 @@ public class SysDatabaseService : IDynamicApiController, ITransient
     [DisplayName("创建实体")]
     public void CreateEntity(CreateEntityInput input)
     {
-        var config = App.GetOptions<DbConnectionOptions>().ConnectionConfigs.FirstOrDefault(u => u.ConfigId == input.ConfigId);
+        var config = App.GetOptions<DbConnectionOptions>().ConnectionConfigs.FirstOrDefault(u => u.ConfigId.ToString() == input.ConfigId);
         input.Position = string.IsNullOrWhiteSpace(input.Position) ? "Yahaha.Application" : input.Position;
         input.EntityName = string.IsNullOrWhiteSpace(input.EntityName) ? (config.EnableUnderLine ? CodeGenUtil.CamelColumnName(input.TableName, null) : input.TableName) : input.EntityName;
 

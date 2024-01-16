@@ -17,8 +17,11 @@ export interface FormItem {
 }
 
 export interface FormList {
+  key: string
+  fieldName: string
   name: string
   type: string
+  isLayout?: boolean
   control: any // 当前type表单控件所有props
   item?: FormItem // formItem组件所有props
   config: any // 其他配置信息
@@ -26,11 +29,22 @@ export interface FormList {
   columns?: any // 布局字段
   tableData?: any // 子表时
   options?: Options[] // radio,checkbox,select选项
+  list?: any // 布局字段
+}
+
+export interface widgetConfig {
+  name: string,
+  description: string,
+  fieldType: string[],
+  isLayout?: boolean,
+  options: any[]
 }
 
 export interface FormData {
   list: FormList[]
   form: any // form所有props
+  modelId?: number
+  sysModel?: any
   config?: {
     style?: string // 表单css样式，相当于scope
     hideField?: string[] // 使用v-if隐藏的字段，用于交互

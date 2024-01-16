@@ -97,7 +97,6 @@
     groupClick(obj)
   }
   const groupClick = (obj: any) => {
-    console.log('groupClick', obj)
     activeKey.value = obj.name
     emits('controlBtnClick', obj)
   }

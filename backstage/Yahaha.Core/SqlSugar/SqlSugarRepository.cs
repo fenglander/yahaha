@@ -49,7 +49,7 @@ public class SqlSugarRepository<T> : SimpleClient<T> where T : class, new()
         {
             // 获取主库连接配置
             var dbOptions = App.GetOptions<DbConnectionOptions>();
-            var mainConnConfig = dbOptions.ConnectionConfigs.First(u => u.ConfigId == SqlSugarConst.ConfigId);
+            var mainConnConfig = dbOptions.ConnectionConfigs.First(u => u.ConfigId.ToString() == SqlSugarConst.ConfigId);
 
             // 连接配置
             var connectionConfig = new DbConnectionConfig
@@ -74,4 +74,15 @@ public class SqlSugarRepository<T> : SimpleClient<T> where T : class, new()
 
         return res;
     }
+    /// <summary>
+    /// 查询
+    /// </summary>
+    /// <returns></returns>
+    public ISugarQueryable<T> YhhQuery()
+    {
+        var res = base.Context.Queryable<T>();
+
+        return res;
+    }
+    
 }

@@ -3,7 +3,7 @@
 </template>
   
 <script setup lang="ts">
-import { defineComponent, ref, toRefs } from 'vue';
+import { ref, toRefs } from 'vue';
 const emit = defineEmits(['update:modelValue'])
 const props = defineProps({
     modelValue: {

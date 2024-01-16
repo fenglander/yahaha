@@ -37,16 +37,16 @@
   <script setup lang="ts">
   import headTools from '/@/components/yahaha/design/components/headTools.vue';
   import FormControl from '/@/components/yahaha/design/form/components/dragControl.vue'
-  import FormDesign from '/@/components/yahaha/design/form/components/form.vue'
+  import FormDesign from '/@/components/yahaha/design/form/components/formRenderer.vue'
   import FormControlAttr from '/@/components/yahaha/design/form/components/formControlAttr.vue'
   import VueFile from '/@/components/yahaha/design/components/vueFile.vue'
   import AceDrawer from '/@/components/yahaha/design/components/aceDrawer.vue'
   import { ref, reactive, provide, onMounted } from 'vue'
   import { useDesignFormStore } from '/@/components/yahaha/design/store/designForm'
-  import { getRequest } from '/@/api/model/form';
+  import { getRequest } from '/@/api/model/';
   import { ElMessage } from 'element-plus'
   import { useRoute, useRouter } from 'vue-router'
-  import { afterResponse, beforeRequest, onChange } from '/@/components/yahaha/design/utils/utils'
+  import { afterResponse, beforeRequest, onChange } from '/@/components/yahaha/design/utils/'
   import {
 	json2string,
 	objToStringify,

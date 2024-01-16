@@ -1,21 +1,14 @@
-﻿using Org.BouncyCastle.Ocsp;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿namespace Yahaha.Core.Models.Entity;
 
-namespace Yahaha.Core.Models.Entity;
-
-[SugarTable(null, "字段表")]
+[YhhTable("字段表","Name desc, Description")]
 [SystemTable]
-public class SysFields:EntityBase
+public class SysField:EntityBase
 {
 
-    [SugarColumn(ColumnDescription = "名称")]
+    [YhhColumn(ColumnDescription = "名称")]
     public string Name { get; set; }
 
-    [SugarColumn(ColumnDescription = "描述")]
+    [YhhColumn(ColumnDescription = "描述")]
     public string? Description { get; set; }
 
     [SugarColumn(ColumnDescription = "帮助")]
@@ -26,31 +19,67 @@ public class SysFields:EntityBase
     /// <summary>
     /// 模型
     /// </summary>
-    [SugarColumn(ColumnDescription = "模型")]
-    [Navigate(NavigateType.OneToOne, nameof(ModelId))]//一对一 
-    public SysModels SysModels { get; set; } //不能赋值只能是null
+    [YhhColumn(ColumnDescription = "模型", RelationalType = RelationalType.ManyToOne)]
+    public SysModels SysModel { get; set; }
 
-    [SugarColumn(ColumnDescription = "数据类型")]
+    /// <summary>
+    /// 字段列表
+    /// </summary>
+    [YhhColumn(ColumnDescription = "模型名称", RelationalType = RelationalType.Relate, Related = "SysModel.Name")]
+    public string? SysModelName { get; set; }
+    /// <summary>
+    /// 长度
+    /// </summary>
+    [YhhColumn(ColumnDescription = "长度")]
+    public int? Length { set; get; }
+    /// <summary>
+    /// 小数点长度
+    /// </summary>
+    [YhhColumn(ColumnDescription = "小数精度")]
+    public int? DecimalDigits { set; get; }
+    /// <summary>
+    /// 是否可以为null默为false
+    /// </summary>
+    [YhhColumn(ColumnDescription = "非空")]
+    public bool NotNull { set; get; }
+
+    [YhhColumn(ColumnDescription = "关系模型", RelationalType = RelationalType.ManyToOne)]
+    public SysModels? RelModel { get; set; }
+    /// <summary>
+    /// 字段列表
+    /// </summary>
+    [YhhColumn(ColumnDescription = "子表字段", RelationalType = RelationalType.Relate, Related = "RelModel.Fields")]
+    public List<SysField> SubFields { get; set; }
+
+    [YhhColumn(ColumnDescription = "类型")]
     public string? tType { get; set; }
 
-    [SugarColumn(ColumnDescription = "关系类型")]
-    public string? NavigatType { get; set; }
+    [SugarColumn(ColumnDescription = "枚举值",ColumnDataType = StaticConfig.CodeFirst_BigString)]
+    public string? EnumValue { get; set; }
 
-    [SugarColumn(ColumnDescription = "关系字段")]
-    public string? RelFieldName { get; set; }
+    [SugarColumn(ColumnDescription = "关系模型名称")]
+    public string? RelModelName { get; set; }
 
-    [SugarColumn(ColumnDescription = "关系字段2")]
-    public string? RelFieldName2 { get; set; }
+    [SugarColumn(ColumnDescription = "关联字段")]
+    public bool Relate { get; set; } = false;
 
-    [SugarColumn(ColumnDescription = "映射类型")]
-    public string? MappingType { get; set; }
-
-    [SugarColumn(ColumnDescription = "映射对象ID1")]
-    public string? MappingAId { get; set; }
-
-    [SugarColumn(ColumnDescription = "映射对象ID2")]
-    public string? MappingBId { get; set; }
+    [SugarColumn(ColumnDescription = "关联对象")]
+    public string? Related { get; set; }
 
     [SugarColumn(ColumnDescription = "过滤条件")]
     public string? WhereSql { get; set; }
+
+    [SugarColumn(ColumnDescription = "默认显示")]
+    public bool? Display { get; set; }
+
+    [SugarColumn(ColumnDescription = "其他属性")]
+    public string? ExtendedAttribute { get; set; }
+
+    /// <summary>
+    /// @null 删除关联记录后，当前值会设为null。
+    /// @restrict 删除关联记录时，如果与本记录存在关联，则不允许删除。
+    /// @cascade 删除关联记录后，当前记录也会被删除。
+    /// </summary>
+    [YhhColumn(ColumnDescription = "删除关联操作")]
+    public OnDelete? OnDelete { get; set; }
 }

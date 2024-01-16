@@ -1,0 +1,8 @@
+{
+  "$schema": "https://gitee.com/dotnetchina/Furion/raw/v4/schemas/v4/furion-schema.json",
+
+  "UtAps": {
+    "DbType": "SqlServer", // MySql、SqlServer、Sqlite、Oracle、PostgreSQL、Dm、Kdbndp、Oscar、MySqlConnector、Access、OpenGauss、QuestDB、HG、ClickHouse、GBase、Odbc、Custom
+    "ConnectionString": "Data Source=192.168.110.168; Initial Catalog = APSALL;User Id=aps; Password=aps;" // 库连接字符串
+  }
+}

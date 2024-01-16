@@ -133,17 +133,17 @@ export interface fieldFilter {
     default: false;
 };
 export interface userFilterSchemes {
-    name: string,
-    tableName: string,
-    modelId: number,
-    sysModels: any,
-    defaultFields: string,
-    defaultFilter: string,
-    default: boolean,
+    Name: string,
+    TableName: string,
+    ModelId: number,
+    SysModels: any,
+    DefaultFields: string,
+    DefaultFilter: string,
+    Default: boolean,
     createTime: any,
-    updateTime: any,
-    createUserId: any | null,
-    updateUserId: any | null,
-    isDelete: boolean,
-    id: number
-}
+    UpdateTime: any,
+    CreateUserId: any | null,
+    UpdateUserId: any | null,
+    IsDelete: boolean,
+    Id: number
+};

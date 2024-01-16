@@ -12,7 +12,7 @@
 </template>
   
 <script setup lang="ts">
-import { onMounted, PropType, ref, toRefs } from 'vue';
+import {  PropType, ref } from 'vue';
 import { SysFields } from '/@/api-services/models';
 const isPopover = ref(false);
 const popoverWidth = ref(200);
@@ -34,9 +34,8 @@ const propsValue = ref((props.modelValue[props.field.name]));
 const getvalue = () => {
     var internalValue = "-";
     if (propsValue.value !== null) {
-        internalValue = propsValue.value.toString();
+        internalValue = propsValue?.value?.toString();
         // 现在可以安全地使用 stringValue
-    } else {
     }
     return internalValue;
 };

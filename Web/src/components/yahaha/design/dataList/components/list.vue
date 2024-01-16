@@ -204,7 +204,7 @@
 </template>
 
 <script lang="ts" setup>
-  import DesignForm from '../../form/components/form.vue'
+  import DesignForm from '../../form/components/formRenderer.vue'
   import {
     computed,
     nextTick,

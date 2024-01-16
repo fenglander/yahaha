@@ -7,45 +7,40 @@
 // 软件按“原样”提供，不提供任何形式的明示或暗示的保证，包括但不限于对适销性、适用性和非侵权的保证。
 // 在任何情况下，作者或版权持有人均不对任何索赔、损害或其他责任负责，无论是因合同、侵权或其他方式引起的，与软件或其使用或其他交易有关。
 
-using COSXML.Log;
-using Mapster;
-using MapsterMapper;
-using Microsoft.AspNetCore.JsonPatch.Internal;
-using Microsoft.AspNetCore.Mvc.ModelBinding;
+using Elasticsearch.Net;
+using FluentEmail.Core;
 using Nest;
-using OfficeOpenXml.FormulaParsing.Excel.Functions.Logical;
+using NetTaste;
+using Newtonsoft.Json.Linq;
 using OfficeOpenXml.FormulaParsing.Excel.Functions.Text;
-using Org.BouncyCastle.Ocsp;
-using SqlSugar;
-using System.Collections;
+using RazorEngine.Compilation.ImpromptuInterface.InvokeExt;
 using System.Collections.Generic;
+using System.DirectoryServices.ActiveDirectory;
 using System.Dynamic;
+using System.Reflection;
+using Yahaha.Core.Models;
+using Yahaha.Core.Models.Dto;
 using Yahaha.Core.Models.Entity;
-using Microsoft.AspNetCore.Mvc;
-using System.Collections.Generic;
 using Yahaha.Core.Service.Role.Dto;
-using static SKIT.FlurlHttpClient.Wechat.Api.Models.CgibinMessageDeviceSubscribeSendRequest.Types;
-using static SKIT.FlurlHttpClient.Wechat.Api.Models.CgibinUserInfoBatchGetRequest.Types;
-using Microsoft.AspNetCore.Identity;
-using Furion.RemoteRequest;
 
 namespace Yahaha.Core.Service;
 
 /// <summary>
 /// 系统模型服务
 /// </summary>
-[ApiDescriptionSettings(Order = 460)]
+[ApiDescriptionSettings(Order = 990)]
 public class ModelsService : IDynamicApiController, ITransient
 {
     private readonly IdentityService _identitySvc;
     private readonly UserManager _userManager;
     private readonly SqlSugarRepository<SysModels> _sysModels;
-    private readonly SqlSugarRepository<SysFields> _sysFields;
+    private readonly SqlSugarRepository<SysField> _sysFields;
     private readonly ISqlSugarClient _db;
     private static readonly ICache _cache = Cache.Default;
+    private DataElement _de;
 
     public ModelsService(SqlSugarRepository<SysModels> sysModels,
-        SqlSugarRepository<SysFields> sysFields,
+        SqlSugarRepository<SysField> sysFields,
         IdentityService identityService,
         UserManager userManager,
         ISqlSugarClient db)
@@ -55,108 +50,114 @@ public class ModelsService : IDynamicApiController, ITransient
         _sysModels = sysModels;
         _sysFields = sysFields;
         _db = db;
+        _de = new DataElement(_db);
+    }
+
+
+    /// <summary>
+    /// 获取模型动作信息
+    /// </summary>
+    /// <param name="modelid">模型ID</param>
+    /// <returns></returns>
+    public List<dynamic> getActionList(long? modelid = null)
+    {
+        var query = _de.Search(nameof(SysAction));
+        if (modelid != null)
+        {
+            query = query.Where("\"BindingModel\" = @model", new { model = (long)modelid });
+        }
+        var Raw = query.ToList();
+        DrillDownDataDto DrillDownParams = new DrillDownDataDto
+        {
+            model = nameof(SysAction),
+            items = Raw,
+        };
+        var Res = _de.DrillDownData(DrillDownParams);
+        return Res.Select(expando => (dynamic)expando).ToList();
     }
 
     /// <summary>
     /// 获取模型列表
     /// </summary>
-    /// <param name="input"></param>
-    /// <returns></returns>
+    /// <param name="name"></param>
+    /// <returns></returns> 
     [DisplayName("获取模型列表")]
-    public async Task<List<SysModels>> GetModelList([FromQuery] PosInput input)
+    public List<dynamic> GetModelList([FromQuery] string? name)
     {
-        var res = await _sysModels.AsQueryable().Includes(x => x.Fields, model => model.SysModels)
-            .WhereIF(!string.IsNullOrWhiteSpace(input.Name), u => u.Name.Contains(input.Name))
-            .WhereIF(!string.IsNullOrWhiteSpace(input.Code), u => u.Model.Contains(input.Code))
-            .OrderBy(u => u.Name).ToListAsync();
-        return res;
+        var cacheKey = $"Frontend.Init.ModelList";
+        List<ExpandoObject> ObjectRes = new List<ExpandoObject>();
+        if (!_cache.TryGetValue(cacheKey, out ObjectRes))
+        {
+            var query = _de.Search("SysModels");
+
+            var Row = query.OrderBy("\"Description\"").ToList();
+            DrillDownDataDto DrillDownParams = new DrillDownDataDto
+            {
+                model = "SysModels",
+                items = Row,
+                maxLevel = 3,
+            };
+            ObjectRes = _de.DrillDownData(DrillDownParams);
+            _cache.Set(cacheKey, ObjectRes, 0);
+        }
+
+        if (!string.IsNullOrEmpty(name))
+        {
+            ObjectRes = ObjectRes.Where(item => (string)item.GetType().GetProperty("Name").GetValue(item) == name).ToList();
+        }
+        return ObjectRes.Select(expando => (dynamic)expando).ToList(); ;
     }
 
     /// <summary>
     /// 获取字段列表
     /// </summary>
-    /// <param name="model"></param>
     /// <returns></returns>
-    [DisplayName("获取字段列表")]
-    public async Task<List<SysFields>> getFieldList(string model)
+    [DisplayName("前端初始化字段列表")]
+    public List<dynamic> getFieldList()
     {
-        var list = await GetUserTableViewFields(model);
-
-        return list;
-    }
-
-    /// <summary>
-    /// 获取字段设置信息
-    /// </summary>
-    /// <param name="id"></param>
-    /// <returns></returns>
-    [DisplayName("获取字段设置信息")]
-    [HttpGet]
-    public async Task<List<SysFields>> getFieldInfo(long id)
-    {
-        // 配置缓存
-        var cacheKey = $"Models/getFieldInfo,id:{id}";
-        List<SysFields> list = new List<SysFields>();
-
-        if (!_cache.TryGetValue(cacheKey, out list))
+        List<ExpandoObject> ObjectRes = new List<ExpandoObject>();
+        var cacheKey = $"Frontend.Init.FieldList";
+        if (!_cache.TryGetValue(cacheKey, out ObjectRes))
         {
-            // 如果缓存中没有值，则执行数据库查询
-            list = await _db.Queryable<SysFields>()
-               .Includes(x => x.SysModels)
-               .Where(x => x.Id == id)
-               .ToListAsync();
+            var query = _de.Search("SysField");
 
+            var Row = query.OrderBy("\"Description\"").ToList();
+            DrillDownDataDto DrillDownParams = new DrillDownDataDto
+            {
+                model = "SysField",
+                items = Row,
+                maxLevel = 3,
+            };
+            ObjectRes = _de.DrillDownData(DrillDownParams);
             // 将查询结果添加到缓存中
-            _cache.Set(cacheKey, list);
+            _cache.Set(cacheKey, ObjectRes, 0);
         }
+        List<dynamic> Res = ObjectRes.Select(expando => (dynamic)expando).ToList();
+        return Res;
 
-        return list;
     }
 
-    /// <summary>
-    /// 获取用户表字段设置
-    /// </summary>
-    /// <param name="model"></param>
-    /// <returns></returns>
+
+    [DisplayName("获取模型信息")]
     [HttpGet]
-    public async Task<List<SysFields>> GetUserTableViewFields(string model)
+    public async Task<SysModels> getModelInfo(string model)
     {
-        var cacheKey = $"GetFieldList,Model:{model}";
-        List<SysFields> list = new List<SysFields>();
-
-        if (!_cache.TryGetValue(cacheKey, out list))
-        {
-            // 如果缓存中没有值，则执行数据库查询
-            list = await _db.Queryable<SysFields>()
-               .Includes(x => x.SysModels)
-               .Where(x => x.SysModels.Model == model)
-               .ToListAsync();
-
-            // 将查询结果添加到缓存中
-            _cache.Set(cacheKey, list);
-        }
-        return list;
+        return await _sysModels.GetFirstAsync(it => it.TableName == model);
     }
+
 
     /// <summary>
     /// 获取用户筛选字段信息
     /// </summary>
     /// <param name="model"></param>
     /// <returns></returns>
-    public async Task<List<UserFilterScheme>> GetUserFilterSchemes(string model)
+    public List<dynamic> GetUserFilterSchemes(long model)
     {
-        List<UserFilterScheme> list = new List<UserFilterScheme>();
-        list = await _db.Queryable<UserFilterScheme>()
-            .Includes(x => x.SysModels)
-            .Where(x => x.TableName == model && x.CreateUserId == _userManager.UserId)
-            .ToListAsync();
-        //如果没有值则生成一个默认的，选name和code作为筛选条件
-        if (list == null || list.Count() == 0)
-        {
-            
-        }
 
-        return list;
+        var query = _de.Search("UserFilterScheme")
+            .Where("\"ModelId\" = @ModelId and \"CreateUserId\" = @CreateUserId", new { ModelId = model, CreateUserId = _userManager.UserId })
+            .ToList();
+        return query;
     }
 
     /// <summary>
@@ -173,12 +174,13 @@ public class ModelsService : IDynamicApiController, ITransient
         {
             res = await _db.Storageable(input).ExecuteCommandAsync();
 
-        }catch (Exception ex)
+        }
+        catch (Exception ex)
         {
             throw new Exception(ex.Message);
         }
 
-        if(res >0) { return res; } else { throw new Exception("更新失败"); }
+        if (res > 0) { return res; } else { throw new Exception("更新失败"); }
     }
 
 
@@ -189,18 +191,12 @@ public class ModelsService : IDynamicApiController, ITransient
     /// <returns></returns>
     public async Task<GeneralListRes> GeneralListData(GeneralListDto input)
     {
-        
-        var Fields = await GetUserTableViewFields(input.model);
+        var Model = await _sysModels.GetByIdAsync(input.model);
+        var query = _de.Search(Model.TableName);
+        var Fields = _de.GetSysFields(Model.TableName);
+        var FilterSchemes = GetUserFilterSchemes(input.model);
 
-        var FilterSchemes = await GetUserFilterSchemes(input.model);
-
-        if (input.model == null)
-        {
-            throw new Exception("请输入正确表名");
-        }
-        var query =  _db.Queryable<dynamic>().AS(input.model);
-
-        if(input.filters != null)
+        if (input.filters != null)
         {
             var FieldFilters = input.filters;
             var conModels = new List<IConditionalModel>();
@@ -209,26 +205,27 @@ public class ModelsService : IDynamicApiController, ITransient
             {
                 if (field.filters == null) continue;
                 var FieldName = field.name;
-                foreach(var item in field.filters)
+                foreach (var item in field.filters)
                 {
                     if (item == null) continue;
-                    conModels.Add(new ConditionalModel { FieldName = FieldName, ConditionalType = item.conditionalType, FieldValue = item.value, CSharpTypeName = field.tType });
+                    conModels.Add(new ConditionalModel { FieldName = "\"" + FieldName + "\"", ConditionalType = item.conditionalType, FieldValue = item.value, CSharpTypeName = field.tType });
                 }
             }
             query = query.Where(conModels);
         }
 
-        var Raw  = await query.ToPagedListAsync(input.Page, input.PageSize);
+        var Raw = await query.ToPagedListAsync(input.Page, input.PageSize);
 
-        DrillDownDataDto DrillDownParams = new DrillDownDataDto {
-            model = input.model,
+        DrillDownDataDto DrillDownParams = new DrillDownDataDto
+        {
+            model = Model.TableName,
             items = Raw.Items.ToList(),
         };
 
-        
-        var expandoList = await DrillDownData(DrillDownParams);
+        var expandoList = _de.DrillDownData(DrillDownParams);
 
-        GeneralListRes res = new GeneralListRes() {
+        GeneralListRes res = new GeneralListRes()
+        {
             Page = Raw.Page,
             PageSize = Raw.PageSize,
             Total = Raw.Total,
@@ -242,168 +239,217 @@ public class ModelsService : IDynamicApiController, ITransient
         return res;
     }
 
+
     /// <summary>
-    /// 测试表单接口
+    /// 通用表单数据接口
     /// </summary>
+    /// <param name="input"></param>
     /// <returns></returns>
-    public List<ExpandoObject> getSourceListByFormDesign()
+    public async Task<dynamic> GeneralFormData(GeneralFormDto input)
     {
-        var expandoList = new List<ExpandoObject>();
-
-
-        var expando = new ExpandoObject() as IDictionary<string, object>;
-        // 模拟数据
-        List<ExpandoObject> dataList = new List<ExpandoObject>
+        var Model = await _sysModels.GetByIdAsync(input.model);
+        if (Model == null || Model.TableName == null)
         {
-            CreateExpandoObject(1, 1, null, "", 14, "请假", "请假流程", "ak-holidays", null),
-            CreateExpandoObject(0, 1, null, "admin", 13, "客户信息管理", "客户信息管理", "ak-customer", null),
-            CreateExpandoObject(0, 1, null, "admin", 12, "组件字段示例", "组件字段示例", "ak-test", null)
+            throw new Exception("请输入正确表名");
+        }
+        var query = _de.Search(Model.TableName);
+        var conModels = new List<IConditionalModel>
+        {
+            new ConditionalModel { FieldName = "\"Id\"", ConditionalType = ConditionalType.Equal, FieldValue = input.id.ToString(), CSharpTypeName="long" }
         };
+        query = query.Where(conModels);
 
-        ExpandoObject CreateExpandoObject(int category, int status, DateTime? createDate, string creatName,
-            int id, string name, string remark, string tableName, DateTime? updateDate)
+        var Row = query.ToList();
+
+        DrillDownDataDto DrillDownParams = new DrillDownDataDto
         {
-            dynamic expando = new ExpandoObject();
-            expando.category = category;
-            expando.status = status;
-            expando.creatDate = createDate;
-            expando.creatName = creatName;
-            expando.id = id;
-            expando.name = name;
-            expando.remark = remark;
-            expando.tableName = tableName;
-            expando.updateDate = updateDate;
-            return expando;
-        }
+            model = Model.TableName,
+            items = Row,
+            maxLevel = 3,
+        };
+        var res = _de.DrillDownData(DrillDownParams).FirstOrDefault();
 
-        return dataList;
-    }
-
-
-    public async Task<List<ExpandoObject>> DrillDownData(DrillDownDataDto Params)
-    {
-        var expandoList = new List<ExpandoObject>();
-        var FieldList = await getFieldList(Params.model);
-        List<dynamic> TempValueList;
-        if (Params.items != null)
-        {
-            TempValueList = Params.items;
-        }
-        else
-        {
-            TempValueList = await GetRecById(Params.model, Params.relField, Params.id);
-        }
-
-        foreach (var val in TempValueList)
-        {
-            var valDict = val as IDictionary<string, object>;
-            var expando = new ExpandoObject() as IDictionary<string, object>;
-
-            foreach (var Field in FieldList)
-            {
-                if (Field.RelFieldName != null && Field.RelFieldName != "")
-                {
-                    if (Params.curLevel >= Params.maxLevel) { continue; }
-                    // 使用curLevel + 1而不是curLevel++来控制深度
-                    var nextLevel = Params.curLevel + 1;
-
-                    if (Field.NavigatType == "OneToMany")
-                    {
-                        DrillDownDataDto nextParams = new DrillDownDataDto { 
-                            model = Field.tType,
-                            id = (long)valDict["id"],
-                            relField = Field.RelFieldName,
-                            curLevel = nextLevel,
-                            maxLevel = Params.maxLevel,
-                        };
-                        expando[Field.Name] = await DrillDownData(nextParams);
-                    }
-                    else if (Field.NavigatType == "OneToOne")
-                    {
-                        DrillDownDataDto nextParams = new DrillDownDataDto()
-                        {
-                            model = Field.tType,
-                            id = (long)valDict[Field.RelFieldName.ToLower()],
-                            relField = "id",
-                            curLevel = nextLevel,
-                            maxLevel = Params.maxLevel,
-                        };
-                        expando[Field.Name] = await DrillDownData(nextParams);
-                    }
-                }
-                else
-                {
-                    expando[Field.Name] = valDict[Field.Name.ToLower()];
-                }
-            }
-
-            expandoList.Add((ExpandoObject)expando);
-        }
-
-        return expandoList;
-    }
-
-
-    public async Task<List<dynamic>> GetRecById(string ModelName, string idField = "", long id = 0)
-    {
-
-        // 配置缓存
-        var cacheKey = $"GetRecById,ModelName:{ModelName},idField:{idField},id:{id}";
-        ConcurrentDictionary<Type, LambdaExpression> GetRecCache;
-        List<dynamic> res = new List<dynamic>();
-        if (!_cache.TryGetValue(cacheKey, out GetRecCache))
-        {
-            GetRecCache = new ConcurrentDictionary<Type, LambdaExpression>();
-            var query = _db.Queryable<dynamic>().AS(ModelName);
-            if (id > 0 && idField != "")
-            {
-                var whereFunc = ObjectFuncModel.Create("Format", idField, "=", "{long}:" + id.ToString());
-                query.Where(whereFunc);
-            }
-
-            res = await query.ToListAsync();
-            var lambdaExpression = Expression.Lambda<Func<List<dynamic>>>(Expression.Constant(res));
-            GetRecCache.AddOrUpdate(typeof(List<dynamic>), lambdaExpression, (key, existing) => lambdaExpression);
-            _cache.Set(cacheKey, GetRecCache, 10);
-
-        }
-        else
-        {
-            // 如果缓存中有值，则直接返回
-            if (GetRecCache.TryGetValue(typeof(List<dynamic>), out var cachedExpression))
-            {
-                var func = (Func<List<dynamic>>)cachedExpression.Compile();
-                res = func();
-            }
-        }
         return res;
     }
 
-    static ExpandoObject ConvertToExpandoObject(dynamic dynamicObj)
+    /// <summary>
+    /// 通用表单删除接口
+    /// </summary>
+    /// <param name="input">传参</param>
+    /// <returns></returns>
+    public int GeneralDelete(GeneralDeleteDto input)
     {
-        ExpandoObject expandoObj = new ExpandoObject();
-        var expandoDict = (IDictionary<string, object>)expandoObj;
-
-        foreach (var propertyName in GetDynamicMemberNames(dynamicObj))
+        var Model = _sysModels.GetById(input.model);
+        if (Model == null || Model.TableName == null)
         {
-            var propertyValue = GetPropertyValue(dynamicObj, propertyName);
-            expandoDict[propertyName] = propertyValue;
+            throw new Exception("请输入正确表名");
+        }
+        string ids = string.Join(",", input.ids);
+        var conModels = new List<IConditionalModel>
+        {
+            new ConditionalModel { FieldName = "\"Id\"", ConditionalType = ConditionalType.In, FieldValue = ids }
+        };
+        var list = _de.Search(Model.TableName).Where(conModels).ToList();
+        return _de.Delete(Model.TableName, list);
+    }
+
+    /// <summary>
+    /// 通用表单新增接口
+    /// </summary>
+    /// <param name="input">传参</param>
+    /// <returns></returns>
+    public long GeneralSave(GeneralCreateDto input)
+    {
+        var Model = _sysModels.GetById(input.model);
+        if (Model == null || Model.TableName == null)
+        {
+            throw new Exception("请输入正确表名");
+        }
+        // 将 object 转换为 JToken
+        JToken jToken = JToken.FromObject(input.data);
+        // 将 JToken 转换为 Dictionary<string, object>
+        Dictionary<string, object> result = jToken.ToObject<Dictionary<string, object>>();
+        bool hasId = result.ContainsKey("Id") && result["Id"] != null && long.TryParse(result["Id"].ToString(), out long id) && id != 0;
+        if (hasId)
+        {
+            return _de.Update(Model.TableName, result);
+        }
+        else
+        {
+            return _de.Create(Model.TableName, result);
+        }
+    }
+
+    /// <summary>
+    /// 通用执行函数
+    /// </summary>
+    /// <param name="input"></param>
+    /// <returns></returns>
+    [HttpPost]
+    public dynamic GeneralExecFunc(GeneralExecFuncDto input)
+    {
+        dynamic res = new ExpandoObject();
+        if (input.moduleName == null) { return res; }
+        // 加载程序集
+        Assembly assembly = Assembly.Load(input.moduleName);
+
+        Type classType = assembly.GetType(input.className);
+        object instance = Activator.CreateInstance(classType);
+
+        // 获取 Res 字段
+        var resProperty = classType.GetField("Rec");
+        Type recType = assembly.GetType(input.model.Name.Value);
+        // 获取 List<> 的类型
+        Type listType = typeof(List<>).MakeGenericType(recType);
+        // 创建 List<> 实例
+        IList resultList = (IList)Activator.CreateInstance(listType);
+
+        // 将 object 转换为 JToken
+        JToken jToken = JToken.FromObject(input.data);
+        // 将 JToken 转换为 Dictionary<string, object>
+        Dictionary<string, object> Dict = jToken.ToObject<Dictionary<string, object>>();
+        var item = _de.ConvertToClass(Dict, recType);
+
+        resultList.Add(item);
+
+        resProperty.SetValue(instance, resultList);
+        // 获取 AuditRes 方法  调用 AuditRes 方法
+        MethodInfo methodInfo = instance.GetType().GetMethod(input.methodName);
+        object[] porp = null; // 生成参数 new object[] { "Prop1Value", "Prop2Value" }
+        var result = methodInfo?.Invoke(instance, porp);
+
+        var updatedRec = resProperty?.GetValue(instance);
+
+        // 输出结果
+        res.Data = ConvertToDictionaryList(updatedRec);
+        res.Result = result;
+
+        return res;
+    }
+
+    public async Task<object> CallActionMethod(string methodName, object[] parameters)
+    {
+        var method = GetType().GetMethods().FirstOrDefault(m => m.Name == methodName);
+        if (method == null)
+        {
+            throw new ArgumentException($"Method {methodName} not found in {GetType().Name}.");
+        }
+        // 获取方法参数类型
+        var parameterTypes = method.GetParameters().Select(p => p.ParameterType).ToArray();
+        // 转换参数
+        var convertedParameters = parameters.Select((param, index) => Convert.ChangeType(param, parameterTypes[index])).ToArray();
+        // 调用方法
+        var result = method.Invoke(this, convertedParameters);
+
+        if (method.ReturnType == typeof(Task))
+        {
+            // 处理异步方法
+            await (Task)result;
+            return null;
+        }
+        else
+        {
+            return result;
+        }
+    }
+
+    static List<Dictionary<string, object>> ConvertToDictionaryList(object obj)
+    {
+        List<Dictionary<string, object>> result = new List<Dictionary<string, object>>();
+
+        if (obj is IEnumerable enumerable && !(obj is string))
+        {
+            // 如果是集合类型，递归处理每个元素
+            foreach (var item in enumerable)
+            {
+                result.Add(ConvertToDictionary(item));
+            }
+        }
+        else
+        {
+            // 如果是单个对象，直接处理
+            result.Add(ConvertToDictionary(obj));
         }
 
-        return expandoObj;
+        return result;
     }
 
-    // 获取 DynamicObject 的属性名称
-    static IEnumerable<string> GetDynamicMemberNames(dynamic dynamicObj)
+    static Dictionary<string, object> ConvertToDictionary(object obj)
     {
-        return ((IDynamicMetaObjectProvider)dynamicObj).GetMetaObject(Expression.Constant(dynamicObj)).GetDynamicMemberNames();
+        Dictionary<string, object> dict = new Dictionary<string, object>();
+
+        if (obj != null)
+        {
+            Type type = obj.GetType();
+            PropertyInfo[] properties = type.GetProperties();
+
+            foreach (PropertyInfo property in properties)
+            {
+                object value = property.GetValue(obj);
+
+                if (value != null && !IsPrimitiveType(property.PropertyType))
+                {
+                    // 递归处理非基元数据类型，但如果是List类型，递归转换为List<Dictionary<string, object>>
+                    if (value is IEnumerable && !(value is string))
+                    {
+                        value = ConvertToDictionaryList(value);
+                    }
+                    else
+                    {
+                        value = ConvertToDictionary(value);
+                    }
+                }
+
+                dict.Add(property.Name, value);
+            }
+        }
+
+        return dict;
     }
 
-    // 获取 DynamicObject 的属性值
-    static object GetPropertyValue(dynamic dynamicObj, string propertyName)
+
+    static bool IsPrimitiveType(Type type)
     {
-        return ((IDynamicMetaObjectProvider)dynamicObj).GetMetaObject(Expression.Constant(dynamicObj)).GetMember(Expression.Constant(propertyName)).Value;
+        return type.IsPrimitive || type.IsValueType || type == typeof(string);
     }
-
-
 }

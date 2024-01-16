@@ -8,6 +8,7 @@
 		text-align: left !important;
 		// 移动端 label 右对齐问题
 		justify-content: flex-start !important;
+		align-items: center;
 	}
 	.el-form-item__content {
 		margin-left: 0 !important;
@@ -21,6 +22,7 @@
 		display: flex !important;
 		.el-form-item__label {
 			width: auto !important;
+			align-items: center;
 		}
 	}
 	// 表格演示中的表单筛选最大高度，适配移动端

@@ -9,7 +9,13 @@
 
 using Furion.SpecificationDocument;
 using Lazy.Captcha.Core;
+using Nest;
+using OfficeOpenXml.FormulaParsing.Excel.Functions.RefAndLookup;
+using SixLabors.ImageSharp.Metadata.Profiles.Iptc;
 using Yahaha.Core.Ldap;
+using Yahaha.Core.Models;
+using Yahaha.Core.Service.Role.Dto;
+using static SKIT.FlurlHttpClient.Wechat.Api.Models.CgibinExpressBusinessAccountGetAllResponse.Types;
 
 namespace Yahaha.Core.Service;
 
@@ -28,6 +34,7 @@ public class SysAuthService : IDynamicApiController, ITransient
     private readonly ICaptcha _captcha;
     private readonly SysCacheService _sysCacheService;
     private readonly LdapService _ldapService;
+    private readonly ISqlSugarClient _db;
 
     public SysAuthService(UserManager userManager,
         SqlSugarRepository<SysUser> sysUserRep,
@@ -36,6 +43,7 @@ public class SysAuthService : IDynamicApiController, ITransient
         SysOnlineUserService sysOnlineUserService,
         SysConfigService sysConfigService,
         ICaptcha captcha,
+        ISqlSugarClient db,
         SysCacheService sysCacheService,
         LdapService ldapService)
     {
@@ -48,6 +56,7 @@ public class SysAuthService : IDynamicApiController, ITransient
         _captcha = captcha;
         _sysCacheService = sysCacheService;
         _ldapService = ldapService;
+        _db = db;
     }
 
     /// <summary>
@@ -60,6 +69,7 @@ public class SysAuthService : IDynamicApiController, ITransient
     [DisplayName("登录系统")]
     public async Task<LoginOutput> Login([Required] LoginInput input)
     {
+        DataElement DataElement = new DataElement(_db);
         //// 可以根据域名获取具体租户
         //var host = _httpContextAccessor.HttpContext.Request.Host;
 
@@ -72,15 +82,25 @@ public class SysAuthService : IDynamicApiController, ITransient
         }
 
         // 账号是否存在
-        var user = await _sysUserRep.AsQueryable().Includes(t => t.SysOrg).Filter(null, true).FirstAsync(u => u.Account.Equals(input.Account));
+        var Row = DataElement.Search("SysUser").Where("\"Account\" = @account", new { account = input.Account }).ToList();
+        DrillDownDataDto DrillDownParams = new DrillDownDataDto
+        {
+            model = "SysUser",
+            items = Row,
+        };
+        dynamic user = DataElement.DrillDownData(DrillDownParams).FirstOrDefault();
+
+        //var user = await _sysUserRep.AsQueryable().Includes(t => t.SysOrg).Filter(null, true).FirstAsync(u => u.Account.Equals(input.Account));
         _ = user ?? throw Oops.Oh(ErrorCodeEnum.D0009);
 
         // 账号是否被冻结
-        if (user.Status == StatusEnum.Disable)
+        StatusEnum UserStatus = (StatusEnum)Enum.Parse(typeof(StatusEnum), user.Status.ToString());
+        if (UserStatus == StatusEnum.Disable)
             throw Oops.Oh(ErrorCodeEnum.D1017);
 
         // 租户是否被禁用
-        var tenant = await _sysUserRep.ChangeRepository<SqlSugarRepository<SysTenant>>().GetFirstAsync(u => u.Id == user.TenantId);
+        long UserTenantId = user.TenantId;
+        var tenant = await _sysUserRep.ChangeRepository<SqlSugarRepository<SysTenant>>().GetFirstAsync(u => u.Id == UserTenantId);
         if (tenant != null && tenant.Status == StatusEnum.Disable)
             throw Oops.Oh(ErrorCodeEnum.Z1003);
 

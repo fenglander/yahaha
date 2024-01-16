@@ -16,7 +16,7 @@ namespace Yahaha.Core;
 [AttributeUsage(AttributeTargets.All, AllowMultiple = true, Inherited = true)]
 public class ConstAttribute : Attribute
 {
-    public string Name { get; set; }
+    public string Name;
 
     public ConstAttribute(string name)
     {

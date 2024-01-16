@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="UtAPS.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="UtAps.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\UT.U9\UT.U9.csproj" />
+    <ProjectReference Include="..\Yahaha.Core\Yahaha.Core.csproj" />
+    <ProjectReference Include="..\Yahaha.Plugin.Tools\Yahaha.Plugin.CommonTool.csproj" />
+  </ItemGroup>
+
+</Project>

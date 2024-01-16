@@ -18,7 +18,7 @@ public class DrillDownDataDto
     /// <summary>
     /// 条件值
     /// </summary>
-    public long id { set; get; } = 0;
+    public long id { set; get; }
     /// <summary>
     /// 条件字段
     /// </summary>
@@ -30,7 +30,7 @@ public class DrillDownDataDto
     /// <summary>
     /// 最大层（否则会导致循环）
     /// </summary>
-    public int maxLevel { set; get; } = 3;
+    public int maxLevel { set; get; } = 2;
     /// <summary>
     /// 元数据
     /// </summary>

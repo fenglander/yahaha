@@ -35,7 +35,7 @@ public class SysUser : EntityTenant
     /// <summary>
     /// 真实姓名
     /// </summary>
-    [SugarColumn(ColumnDescription = "真实姓名", Length = 32)]
+    [YhhColumn(Display = true, ColumnDescription = "真实姓名", Length = 32)]
     [MaxLength(32)]
     public virtual string RealName { get; set; }
 
@@ -121,7 +121,7 @@ public class SysUser : EntityTenant
     /// <summary>
     /// 政治面貌
     /// </summary>
-    [SugarColumn(ColumnDescription = "政治面貌", Length = 16)]
+    [YhhColumn(ColumnDescription = "政治面貌", Length = 16)]
     [MaxLength(16)]
     public string? PoliticalOutlook { get; set; }
 
@@ -201,8 +201,7 @@ public class SysUser : EntityTenant
     /// <summary>
     /// 机构
     /// </summary>
-    [SugarColumn(IsIgnore = true)]
-    [Navigate(NavigateType.OneToOne, nameof(OrgId))]
+    [YhhColumn(RelationalType = RelationalType.ManyToOne, ColumnDescription="机构")]
     public SysOrg SysOrg { get; set; }
 
     /// <summary>
@@ -214,8 +213,7 @@ public class SysUser : EntityTenant
     /// <summary>
     /// 职位
     /// </summary>
-    [SugarColumn(IsIgnore = true)]
-    [Navigate(NavigateType.OneToOne, nameof(PosId))]
+    [YhhColumn(RelationalType = RelationalType.ManyToOne, ColumnDescription = "职位")]
     public SysPos SysPos { get; set; }
 
     /// <summary>

@@ -40,6 +40,23 @@ declare interface RoutesListState<T = any> {
 	isColumnsNavHover: Boolean;
 }
 
+// 表单设计信息缓存
+declare interface visualDevState<T = any> {
+	visualDevList: T[];
+}
+
+// 表单组件信息缓存
+declare interface widgetState {
+	yhhSelRelObject: any[];
+}
+
+// 模型信息缓存
+declare interface sysModelState {
+	sysModelList: any[];
+	sysFieldList: any[];
+	sysActionList: any[];
+}
+
 // 布局配置
 declare interface ThemeConfigState {
 	themeConfig: {

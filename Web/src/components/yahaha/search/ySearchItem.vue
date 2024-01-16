@@ -3,7 +3,7 @@
 </template>
   
 <script setup lang="ts">
-import { defineComponent, PropType, ref, watch } from 'vue';
+import {  PropType  } from 'vue';
 import ySearchChar from './ySearchChar.vue';
 import ySearchNum from './ySearchNum.vue';
 import ySearchBool from './ySearchBool.vue';

@@ -67,7 +67,7 @@ const state = reactive<ColumnsAsideState>({
 
 // 设置菜单高亮位置移动
 const setColumnsAsideMove = (k: number) => {
-	if (k === undefined) return false;
+	if (k === undefined || columnsAsideActiveRef.value === null) return false;
 	state.liIndex = k;
 	columnsAsideActiveRef.value.style.top = `${columnsAsideOffsetTopRefs.value[k].offsetTop + state.difference}px`;
 };

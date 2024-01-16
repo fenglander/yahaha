@@ -16,13 +16,13 @@
 				<SubItem :chil="val.children" />
 			</el-sub-menu>
 			<template v-else>
-				<el-menu-item :index="val.path" :key="val.path">
+				<el-menu-item :index="val.path" :key="val.path" :route="{ path: val.path, query:  val.query }">
 					<SvgIcon :name="val.meta.icon" />
 					<template #title v-if="!val.meta.isLink || (val.meta.isLink && val.meta.isIframe)">
 						<span>{{ $t(val.meta.title) }}</span>
 					</template>
 					<template #title v-else>
-						<a class="w100" @click.prevent="onALinkClick(val)">{{ $t(val.meta.title) }}</a>
+						<a class="w100" @click.prevent="onALinkClick(val)">'{{ $t(val.meta.title) }}'</a>
 					</template>
 				</el-menu-item>
 			</template>

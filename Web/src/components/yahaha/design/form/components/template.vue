@@ -27,7 +27,7 @@
   }>()
   const state = reactive({
     visible: false,
-    list: []
+    list: [] as any[]
   })
   const open = () => {
     state.visible = true

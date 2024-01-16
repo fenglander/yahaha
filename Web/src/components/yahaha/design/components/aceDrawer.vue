@@ -23,7 +23,7 @@
 
 <script setup lang="ts">
   import { ref, nextTick, watch, onMounted, onUnmounted } from 'vue'
-  import { aceEdit } from '../utils/utils'
+  import { aceEdit } from '../utils'
   const props = withDefaults(
     defineProps<{
       modelValue: boolean

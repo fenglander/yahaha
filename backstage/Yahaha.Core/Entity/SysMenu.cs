@@ -29,6 +29,12 @@ public class SysMenu : EntityBase
     public MenuTypeEnum Type { get; set; }
 
     /// <summary>
+    /// 应用
+    /// </summary>
+    [SugarColumn(ColumnDescription = "应用")]
+    public long? VisualDevId { get; set; }
+
+    /// <summary>
     /// 路由名称
     /// </summary>
     [SugarColumn(ColumnDescription = "路由名称", Length = 64)]

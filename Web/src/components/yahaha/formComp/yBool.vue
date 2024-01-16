@@ -1,6 +1,6 @@
 <template>
     <el-tag v-if="internalValue"> 是 </el-tag>
-    <el-tag type="danger" v-else=""> 否 </el-tag>
+    <el-tag type="danger" v-else> 否 </el-tag>
 </template>
   
 <script setup lang="ts">

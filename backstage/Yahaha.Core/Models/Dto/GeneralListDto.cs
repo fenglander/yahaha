@@ -1,7 +1,7 @@
 ﻿using System.Dynamic;
 using Yahaha.Core.Models.Entity;
 
-namespace Yahaha.Core.Service;
+namespace Yahaha.Core.Models.Dto;
 
 /// <summary>
 /// 模型列表传入参数
@@ -9,25 +9,12 @@ namespace Yahaha.Core.Service;
 public class GeneralListDto: BasePageInput
 {
     /// <summary>
-    /// 模型名称
+    /// 模型id
     /// </summary>
-    public string model { get; set; }
+    public long model { get; set; }
         
     public List<fieldFilter>? filters { get; set;}
         
-}
-
-
-public class GeneralListRes : SqlSugarPagedList<ExpandoObject>
-{
-    /// <summary>
-    /// 字段信息
-    /// </summary>
-    public List<SysFields> fields { get; set; }
-    /// <summary>
-    /// 查询方案
-    /// </summary>
-    public List<UserFilterScheme> userFilterSchemes { get; set; }
 }
 
 public class fieldFilter

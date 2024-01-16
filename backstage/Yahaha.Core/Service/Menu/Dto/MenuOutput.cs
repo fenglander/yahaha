@@ -78,6 +78,11 @@ public class MenuOutput
     /// 菜单子项
     /// </summary>
     public List<MenuOutput> Children { get; set; }
+
+    /// <summary>
+    /// 应用
+    /// </summary>
+    public long? VisualDevId { get; set; }
 }
 
 /// <summary>

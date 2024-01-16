@@ -12,8 +12,8 @@
   
 <script setup lang="ts">
 import { defineComponent, PropType, ref, toRefs, onMounted } from 'vue';
+import { useSysModel } from '/@/stores/sysModel';
 import { SysFields } from '/@/api-services/models';
-import { getFieldList } from '/@/api/model/list';
 const emit = defineEmits(['update:modelValue'])
 const props = defineProps({
     modelValue: {
@@ -32,9 +32,9 @@ const internalValue = ref(props.modelValue[props.field.name]);
 const fields = ref<SysFields[]>([]);
 //获取字段信息
 
-const fetchData = async () => {
-    var res = await getFieldList(props.field.tType);
-    fields.value = res.data.result?.filter((item: any) => item.description !== null && item.description.trim() !== "")
+const fetchData = () => {
+    var res = useSysModel().getSysModels(props.field.tType);
+    fields.value = res?.filter((item: any) => item.description !== null && item.description.trim() !== "")
     .map((item: any) => ({
       ...item as SysFields,
     })) as SysFields[];

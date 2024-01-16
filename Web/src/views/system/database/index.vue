@@ -9,7 +9,7 @@
 				</el-form-item>
 				<el-form-item label="表名">
 					<el-select v-model="state.tableName" placeholder="表名" filterable clearable @change="handleQueryColumn">
-						<el-option v-for="item in state.tableData" :key="item.name" :label="item.name + '[' + item.description + ']'" :value="item.name" />
+						<el-option v-for="item in state.tableData" :key="item.name" :label="item.description + '[' + item.name + ']'" :value="item.name" />
 					</el-select>
 				</el-form-item>
 				<el-form-item>

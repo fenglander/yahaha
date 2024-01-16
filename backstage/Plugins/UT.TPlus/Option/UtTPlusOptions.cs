@@ -21,5 +21,5 @@ public sealed class UtTPlusOptions : IConfigurableOptions
     /// <summary>
     /// 数据类型
     /// </summary>
-    public DbType DbType { get; set; }
+    public SqlSugar.DbType DbType { get; set; }
 }

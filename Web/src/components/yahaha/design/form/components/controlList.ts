@@ -164,24 +164,6 @@ export default [
           modelValue: ''
         },
         config: {}
-      },
-      {
-        type: 'title',
-        label: '标题',
-        icon: 'title',
-        control: {
-          modelValue: '标题'
-        },
-        config: {}
-      },
-      {
-        type: 'button',
-        label: '按钮',
-        icon: 'button',
-        control: {
-          label: '保存'
-        },
-        config: {}
       }
     ]
   },
@@ -233,11 +215,12 @@ export default [
     ]
   },
   {
-    title: '布局字段',
+    title: '基础组件',
     children: [
       {
         type: 'grid',
         label: '格栅布局',
+        isLayout: true,
         icon: 'grid',
         columns: [
           // 格栅列数据
@@ -257,6 +240,7 @@ export default [
         type: 'tabs',
         label: '标签页',
         icon: 'tabs',
+        isLayout: true,
         columns: [
           {
             label: 'Tab1',
@@ -269,6 +253,7 @@ export default [
       {
         type: 'card',
         label: '卡片布局',
+        isLayout: true,
         icon: 'card',
         list: [],
         control: {},
@@ -278,6 +263,7 @@ export default [
       {
         type: 'flex',
         label: '弹性布局',
+        isLayout: true,
         icon: 'flex',
         list: [],
         tableData: [], // 值集合
@@ -289,6 +275,7 @@ export default [
       {
         type: 'divider',
         label: '分割线',
+        isLayout: true,
         icon: 'divider',
         control: {},
         config: {}
@@ -300,6 +287,24 @@ export default [
         control: {},
         config: {},
         list: []
+      },
+      {
+        type: 'title',
+        label: '标题',
+        icon: 'title',
+        control: {
+          modelValue: '标题'
+        },
+        config: {}
+      },
+      {
+        type: 'button',
+        label: '按钮',
+        icon: 'button',
+        control: {
+          label: '保存'
+        },
+        config: {}
       }
     ]
   },

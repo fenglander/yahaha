@@ -22,7 +22,7 @@
     constFormProps,
     constSetFormOptions,
     objectToArray
-  } from '../../utils/utils'
+  } from '../../utils/'
   import { FormList } from '../../types'
   const props = withDefaults(
     defineProps<{

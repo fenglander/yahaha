@@ -5,25 +5,29 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace Yahaha.Core.Models.Entity;
-[SugarTable(null, "模型")]
 [SystemTable]
+[YhhTable("模型", "Name")]
 public class SysModels:EntityBase
 {
-    [SugarColumn(ColumnDescription = "名称")]
-    public string? Name { get; set; }
+    
+    [YhhColumn(ColumnDescription = "名称", Display =true)]
+    public string? Description { get; set; }
 
-    [SugarColumn(ColumnDescription = "模型")]
-    public string Model { get; set; }
-    [SugarColumn(ColumnDescription = "表名")]
+    /// <summary>
+    /// 模型
+    /// </summary>
+    [YhhColumn(ColumnDescription = "模型", Help = "模型名称")]
+    public string Name { get; set; }
+
+    [YhhColumn(ColumnDescription = "表名")]
     public string? TableName { get; set; }
 
-    [SugarColumn(ColumnDescription = "信息")]
+    [YhhColumn(ColumnDescription = "信息")]
     public string? Info { get; set; }
 
-    [SugarColumn(ColumnDescription = "启用租户")]
+    [YhhColumn(ColumnDescription = "启用租户")]
     public bool IsTenant { get; set; }
 
-    [SugarColumn(ColumnDescription = "字段")]
-    [Navigate(NavigateType.OneToMany, nameof(SysFields.ModelId))]
-    public List<SysFields> Fields { get; set; }//注意禁止手动赋值
+    [YhhColumn(ColumnDescription = "字段", RelationalType = RelationalType.OneToMany, Related = "SysModel")]
+    public List<SysField> Fields { get; set; }
 }

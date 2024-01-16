@@ -51,6 +51,7 @@ export async function setAddRoute() {
  * @link 参考：https://next.router.vuejs.org/zh/api/#push
  */
 export async function frontEndsResetRoute() {
+	
 	await setFilterRouteEnd().forEach((route: RouteRecordRaw) => {
 		const routeName: any = route.name;
 		router.hasRoute(routeName) && router.removeRoute(routeName);

@@ -34,10 +34,10 @@ public static class RepositoryExtension
     /// <returns></returns>
     public static int FakeDelete<T>(this ISqlSugarClient db, T entity) where T : EntityBase, new()
     {
-        return db.Updateable(entity).AS().ReSetValue(x => { x.IsDelete = true; })
+        return db.Updateable(entity).AS()//.ReSetValue(x => { x.IsDelete = true; })
             .IgnoreColumns(ignoreAllNullColumns: true)
             .EnableDiffLogEvent()   // 记录差异日志
-            .UpdateColumns(x => new { x.IsDelete, x.UpdateTime, x.UpdateUserId })  // 允许更新的字段-AOP拦截自动设置UpdateTime、UpdateUserId
+            .UpdateColumns(x => new { x.UpdateTime })  // 允许更新的字段-AOP拦截自动设置UpdateTime、UpdateUserId
             .ExecuteCommand();
     }
 
@@ -62,10 +62,10 @@ public static class RepositoryExtension
     /// <returns></returns>
     public static Task<int> FakeDeleteAsync<T>(this ISqlSugarClient db, T entity) where T : EntityBase, new()
     {
-        return db.Updateable(entity).AS().ReSetValue(x => { x.IsDelete = true; })
+        return db.Updateable(entity).AS()//.ReSetValue(x => { x.IsDelete = true; })
             .IgnoreColumns(ignoreAllNullColumns: true)
             .EnableDiffLogEvent()   // 记录差异日志
-            .UpdateColumns(x => new { x.IsDelete, x.UpdateTime, x.UpdateUserId })  // 允许更新的字段-AOP拦截自动设置UpdateTime、UpdateUserId
+            .UpdateColumns(x => new { x.UpdateTime })  // 允许更新的字段-AOP拦截自动设置UpdateTime、UpdateUserId
             .ExecuteCommandAsync();
     }
 

@@ -9,7 +9,7 @@
     "EnableSsl": false, // 启用SSL
     "UseDefaultCredentials": false, //是否使用默认凭据
     "UserName": "UTIMSQA@ut.cn", // 邮箱账号
-    "Password": "IMSqaut2023.", // 邮箱授权码
+    "Password": "IMSqaut2023!", // 邮箱授权码
     "DefaultFromName": "IMS系统邮件" // 默认邮件标题
   }
 }

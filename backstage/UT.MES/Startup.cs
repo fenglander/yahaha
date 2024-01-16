@@ -9,7 +9,9 @@
 
 
 namespace UT.MES;
-
+/// <summary>
+/// 初始化MES连接
+/// </summary>
 [AppStartup(100)]
 public class Startup : AppStartup
 {
@@ -21,7 +23,11 @@ public class Startup : AppStartup
     {
         services.AddConfigurableOptions<UtMesOptions>();
     }
-
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="app"></param>
+    /// <param name="env"></param>
     public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
     {
     }

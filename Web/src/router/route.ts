@@ -62,6 +62,18 @@ export const dynamicRoutes: Array<RouteRecordRaw> = [
 			icon: 'ele-Clock',
 		},
 	},
+	{
+		path: '/system/generalView/form',
+		name: 'form',
+		component: () => import('/@/views/system/generalView/form.vue'),
+		meta: {
+			title: '通用表单',
+			isHide: true,
+			isKeepAlive: true,
+			isAffix: false,
+			icon: 'ele-Clock',
+		},
+	},
 ];
 
 /**

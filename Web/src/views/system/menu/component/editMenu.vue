@@ -3,7 +3,8 @@
 		<el-dialog v-model="state.isShowDialog" draggable :close-on-click-modal="false" width="700px">
 			<template #header>
 				<div style="color: #fff">
-					<el-icon size="16" style="margin-right: 3px; display: inline; vertical-align: middle"> <ele-Edit /> </el-icon>
+					<el-icon size="16" style="margin-right: 3px; display: inline; vertical-align: middle"> <ele-Edit />
+					</el-icon>
 					<span> {{ props.title }} </span>
 				</div>
 			</template>
@@ -11,14 +12,9 @@
 				<el-row :gutter="35">
 					<el-col :xs="24" :sm="24" :md="24" :lg="24" :xl="24" class="mb20">
 						<el-form-item label="上级菜单">
-							<el-cascader
-								:options="props.menuData"
+							<el-cascader :options="props.menuData"
 								:props="{ checkStrictly: true, emitPath: false, value: 'id', label: 'title' }"
-								placeholder="请选择上级菜单"
-								clearable
-								class="w100"
-								v-model="state.ruleForm.pid"
-							>
+								placeholder="请选择上级菜单" clearable class="w100" v-model="state.ruleForm.pid">
 								<template #default="{ node, data }">
 									<span>{{ data.title }}</span>
 									<span v-if="!node.isLeaf"> ({{ data.children.length }}) </span>
@@ -27,7 +23,8 @@
 						</el-form-item>
 					</el-col>
 					<el-col :xs="24" :sm="24" :md="24" :lg="24" :xl="24" class="mb20">
-						<el-form-item label="菜单类型" prop="type" :rules="[{ required: true, message: '菜单类型不能为空', trigger: 'blur' }]">
+						<el-form-item label="菜单类型" prop="type"
+							:rules="[{ required: true, message: '菜单类型不能为空', trigger: 'blur' }]">
 							<el-radio-group v-model="state.ruleForm.type">
 								<el-radio :label="1">目录</el-radio>
 								<el-radio :label="2">菜单</el-radio>
@@ -36,29 +33,43 @@
 						</el-form-item>
 					</el-col>
 					<el-col :xs="24" :sm="12" :md="12" :lg="12" :xl="12" class="mb20">
-						<el-form-item label="菜单名称" prop="title" :rules="[{ required: true, message: '菜单名称不能为空', trigger: 'blur' }]">
+						<el-form-item label="菜单名称" prop="title"
+							:rules="[{ required: true, message: '菜单名称不能为空', trigger: 'blur' }]">
 							<el-input v-model="state.ruleForm.title" placeholder="菜单名称" clearable />
 						</el-form-item>
 					</el-col>
-					<template v-if="state.ruleForm.type === 1 || state.ruleForm.type === 2">
+					<template v-if="requiredName">
 						<el-col :xs="24" :sm="12" :md="12" :lg="12" :xl="12" class="mb20">
-							<el-form-item label="路由名称">
+							<el-form-item label="路由名称" prop="name"
+								:rules="[{ required: requiredName, message: '路由名称不能为空', trigger: 'blur' }]">
 								<el-input v-model="state.ruleForm.name" placeholder="路由名称" clearable />
 							</el-form-item>
 						</el-col>
 						<el-col :xs="24" :sm="12" :md="12" :lg="12" :xl="12" class="mb20">
-							<el-form-item label="路由路径">
-								<el-input v-model="state.ruleForm.path" placeholder="路由路径" clearable />
+							<el-form-item label="表单应用">
+								<el-select v-model="state.ruleForm.visualDevId" clearable filterable remote reserve-keyword
+									placeholder="输入名称" remote-show-suffix :remote-method="getVisualDevOptions"
+									:loading="loading">
+									<el-option v-for="item in visualDevOptions" :key="item.id" :label="item.fullName"
+										:value="item.id" />
+								</el-select>
 							</el-form-item>
 						</el-col>
 						<el-col :xs="24" :sm="12" :md="12" :lg="12" :xl="12" class="mb20">
+							<el-form-item label="路由路径">
+								<el-input v-model="state.ruleForm.path" :disabled="true" placeholder="路由路径" clearable />
+							</el-form-item>
+						</el-col>
+						<el-col v-if="!state.ruleForm.visualDevId" :xs="24" :sm="12" :md="12" :lg="12" :xl="12"
+							class="mb20">
 							<el-form-item label="组件路径">
 								<el-input v-model="state.ruleForm.component" placeholder="组件路径" clearable />
 							</el-form-item>
 						</el-col>
 						<el-col :xs="24" :sm="12" :md="12" :lg="12" :xl="12" class="mb20">
 							<el-form-item label="菜单图标">
-								<IconSelector v-model="state.ruleForm.icon" :size="getGlobalComponentSize" placeholder="菜单图标" type="all" />
+								<IconSelector v-model="state.ruleForm.icon" :size="getGlobalComponentSize"
+									placeholder="菜单图标" type="all" />
 							</el-form-item>
 						</el-col>
 						<el-col :xs="24" :sm="12" :md="12" :lg="12" :xl="12" class="mb20">
@@ -153,6 +164,7 @@ import IconSelector from '/@/components/iconSelector/index.vue';
 import { getAPI } from '/@/utils/axios-utils';
 import other from '/@/utils/other';
 import { SysMenuApi } from '/@/api-services/api';
+import { useVisualDev } from '/@/stores/visualDev';
 import { SysMenu, UpdateMenuInput } from '/@/api-services/models';
 
 const props = defineProps({
@@ -160,6 +172,12 @@ const props = defineProps({
 	menuData: Array<SysMenu>,
 });
 const emits = defineEmits(['handleQuery']);
+const loading = ref(false);
+const visualDevOptions = ref<any[]>();
+const visualDevComponent = ref("/system/generalView/index");
+const requiredName = computed(() => {
+	return state.ruleForm.type === 1 || state.ruleForm.type === 2
+})
 const ruleFormRef = ref();
 const state = reactive({
 	isShowDialog: false,
@@ -188,10 +206,19 @@ const cancel = () => {
 	state.isShowDialog = false;
 };
 
+const getVisualDevOptions = () => {
+	loading.value = true;
+	visualDevOptions.value = useVisualDev().getVisualDevList();
+	// const res = await getVisualDevList(query);
+	// visualDevOptions.value = res.data?.result ?? [];
+	loading.value = false;
+}
+getVisualDevOptions()
 // 提交
 const submit = () => {
 	ruleFormRef.value.validate(async (valid: boolean) => {
 		if (!valid) return;
+		afterSubmit();
 		if (state.ruleForm.id != undefined && state.ruleForm.id > 0) {
 			await getAPI(SysMenuApi).apiSysMenuUpdatePost(state.ruleForm);
 		} else {
@@ -199,6 +226,38 @@ const submit = () => {
 		}
 		closeDialog();
 	});
+};
+
+const findNodeById = (treeNode: any[] | undefined, targetId: number) => {
+	console.log(treeNode)
+	if (treeNode === undefined) {
+		return undefined
+	}
+	for (const item of treeNode) {
+		if (item.id === targetId) {
+			return item
+		}
+		if (item.children) {
+			const result: any = findNodeById(item.children, targetId);
+			if (result) {
+				return result;
+			}
+		}
+	}
+	return undefined;
+};
+
+const afterSubmit = () => {
+	if (state.ruleForm.visualDevId) {
+		state.ruleForm.component = visualDevComponent.value;
+	}
+	let path = ""
+	if (state.ruleForm.pid) {
+		const p = findNodeById(props.menuData, state.ruleForm.pid)
+		if (p) { path = path + p.path }
+	}
+	if (state.ruleForm.name) { path = path + "/" + state.ruleForm.name; }
+	state.ruleForm.path = path
 };
 
 // 导出对象

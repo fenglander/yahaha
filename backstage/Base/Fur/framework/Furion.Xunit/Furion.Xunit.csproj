@@ -1,0 +1,12 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<Description>Furion Xunit 单元测试拓展插件。</Description>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Furion" Version="4.8.8.41" />
+		<PackageReference Include="xunit.extensibility.execution" Version="2.5.0" />
+	</ItemGroup>
+
+</Project>

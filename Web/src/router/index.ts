@@ -10,6 +10,8 @@ import { Session } from '/@/utils/storage';
 import { staticRoutes, notFoundAndNoPower } from '/@/router/route';
 import { initFrontEndControlRoutes } from '/@/router/frontEnd';
 import { initBackEndControlRoutes } from '/@/router/backEnd';
+import { useVisualDev } from '/@/stores/visualDev';
+const visualDevStores = useVisualDev(pinia);
 
 /**
  * 1、前端控制路由时：isRequestRoutes 为 false，需要写 roles，需要走 setFilterRoute 方法。
@@ -79,6 +81,10 @@ export function formatTwoStageRoutes(arr: any) {
 				v.meta['isDynamic'] = true;
 				v.meta['isDynamicPath'] = v.path;
 			}
+			// 如果是表单设计，则把应用表单设计ID作为参数
+			if (v.visualDevId) {
+				v.query = { ...v.query, visualDevId: v.visualDevId };
+			}
 			newArr[0].children.push({ ...v });
 			// 存 name 值，keep-alive 中 include 使用，实现路由的缓存
 			// 路径：/@/layout/routerView/parent.vue
@@ -111,6 +117,9 @@ router.beforeEach(async (to, from, next) => {
 		} else {
 			const storesRoutesList = useRoutesList(pinia);
 			const { routesList } = storeToRefs(storesRoutesList);
+			
+			to = dgeneralViewFormRouting(to);
+
 			if (routesList.value.length === 0) {
 				if (isRequestRoutes) {
 					// 后端控制路由：路由数据初始化，防止刷新时丢失
@@ -129,6 +138,23 @@ router.beforeEach(async (to, from, next) => {
 		}
 	}
 });
+
+/**
+ * 处理generalView/form动态标题
+ * @param to 目的路由
+ * @returns 加工后的目的路由
+ */
+function dgeneralViewFormRouting(to: any) {
+	if (to.query.visualDev && to.path.indexOf('generalView/form') > -1) {
+		const VisualDev = visualDevStores.getVisualDev(to.query.visualDev)
+		if (VisualDev) {
+			// 没有传id为新增
+			const title = ' | 详情';
+			to.meta.title = VisualDev.fullName + title;
+		}
+	}
+	return to
+}
 
 // 路由加载后
 router.afterEach(() => {

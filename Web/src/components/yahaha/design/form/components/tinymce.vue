@@ -5,7 +5,7 @@
 <script setup lang="ts">
   import { onMounted, watch, ref, computed, onUnmounted } from 'vue'
   import { ElMessage } from 'element-plus'
-  import { getRequest } from '/@/api/model/form';
+  import { getRequest } from '/@/api/model/';
   // https://www.cnblogs.com/huihuihero/p/13877589.html
   // http://tinymce.ax-z.cn/
   const props = withDefaults(

@@ -24,7 +24,7 @@ public abstract class EntityBaseId
 /// <summary>
 /// 框架实体基类
 /// </summary>
-public abstract class EntityBase : EntityBaseId, IDeletedFilter
+public abstract class EntityBase : EntityBaseId
 {
     /// <summary>
     /// 创建时间
@@ -45,10 +45,16 @@ public abstract class EntityBase : EntityBaseId, IDeletedFilter
     public virtual long? CreateUserId { get; set; }
 
     /// <summary>
-    /// 修改者Id
+    /// 创建者
     /// </summary>
-    [SugarColumn(ColumnDescription = "修改者Id", IsOnlyIgnoreInsert = true)]
-    public virtual long? UpdateUserId { get; set; }
+    [YhhColumn(ColumnDescription = "创建者",RelationalType = RelationalType.ManyToOne)]
+    public SysUser CreateUser { get; set; }
+
+    /// <summary>
+    /// 修改者
+    /// </summary>
+    [YhhColumn(ColumnDescription = "修改者", RelationalType = RelationalType.ManyToOne)]
+    public SysUser UpdateUser { get; set; }
 
     /// <summary>
     /// 软删除

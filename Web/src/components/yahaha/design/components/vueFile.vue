@@ -18,7 +18,7 @@
 import { ref, nextTick } from 'vue'
 import Clipboard from 'clipboard'
 import { ElMessage } from 'element-plus'
-import { aceEdit } from '../utils/utils'
+import { aceEdit } from '../utils/'
 import { objToStringify } from '../utils/form'
 
 const visible = ref(false)

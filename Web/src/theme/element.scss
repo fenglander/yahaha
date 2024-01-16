@@ -44,6 +44,10 @@
 	// https://gitee.com/lyt-top/vue-next-admin/issues/I5K1PM
 	.el-form-item .el-form-item__label .el-icon {
 		margin-right: 0px;
+		margin-left: 5px;
+	}
+	.el-form-item .el-form-item__label {
+		align-items: center;
 	}
 }
 
@@ -414,7 +418,7 @@ $--el-table-text-color: #fb6d49;
 	> div:first-child {
 		display: flex;
 		flex-direction: column;
-		height: 100%;
+		// height: 100%;
 
 		//放弃使用 .el-card:nth-child(2) ，方便后期页面扩展
 		.full-table {

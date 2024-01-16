@@ -1,6 +1,8 @@
 import { RouteRecordRaw } from 'vue-router';
 import pinia from '/@/stores/index';
 import { useUserInfo } from '/@/stores/userInfo';
+import { useVisualDev } from '/@/stores/visualDev';
+import { useSysModel } from '/@/stores/sysModel';
 import { useRequestOldRoutes } from '/@/stores/requestOldRoutes';
 import { Session } from '/@/utils/storage';
 import { NextLoading } from '/@/utils/loading';
@@ -40,6 +42,12 @@ export async function initBackEndControlRoutes() {
 	// 触发初始化用户信息 pinia
 	// https://gitee.com/lyt-top/vue-next-admin/issues/I5F1HP
 	await useUserInfo().setUserInfos();
+	// 初始化表单设计缓存
+	await useVisualDev().setVisualDevList();
+	// 初始模型数据缓存
+	await useSysModel().setSysModels();
+	await useSysModel().setSysFiedls();
+	await useSysModel().setSysActions();
 	// 获取路由菜单数据
 	const res = await getBackEndControlRoutes();
 	// 无登录权限时，添加判断

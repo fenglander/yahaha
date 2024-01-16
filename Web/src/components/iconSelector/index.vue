@@ -50,7 +50,7 @@
 </template>
 
 <script setup lang="ts" name="iconSelector">
-import { defineAsyncComponent, ref, reactive, onMounted, nextTick, computed, watch } from 'vue';
+import { defineAsyncComponent, ref, reactive, onMounted, nextTick, computed, watch, PropType } from 'vue';
 import type { TabsPaneContext } from 'element-plus';
 import initIconfont from '/@/utils/getStyleSheets';
 import '/@/theme/iconSelector.scss';
@@ -95,7 +95,10 @@ const props = defineProps({
 	// 双向绑定值，默认为 modelValue，
 	// 参考：https://v3.cn.vuejs.org/guide/migration/v-model.html#%E8%BF%81%E7%A7%BB%E7%AD%96%E7%95%A5
 	// 参考：https://v3.cn.vuejs.org/guide/component-custom-events.html#%E5%A4%9A%E4%B8%AA-v-model-%E7%BB%91%E5%AE%9A
-	modelValue: String,
+
+	modelValue: {
+		required: false,
+	},
 });
 
 // 定义子组件向父组件传值/事件

@@ -26,10 +26,9 @@ public class InventoryService : IDynamicApiController, ITransient
     public async Task<SqlSugarPagedList<InventoryOutput>> Page(InventoryInput input)
     {
         var query= _rep.AsQueryable()
-                    .WhereIF(!string.IsNullOrWhiteSpace(input.code), u => u.code.Contains(input.code.Trim()))
+                    .WhereIF(!string.IsNullOrWhiteSpace(input.code), u => u.Code.Contains(input.code.Trim()))
                     .WhereIF(input.unit>0, u => u.Unit == input.unit)
                     .WhereIF(input.createuserid>0, u => u.CreateUserId == input.createuserid)
-                    .WhereIF(input.updateuserid>0, u => u.UpdateUserId == input.updateuserid)
 
                     .Select<InventoryOutput>()
 ;

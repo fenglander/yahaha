@@ -1,10 +1,10 @@
 <!-- Created by 337547038 on 2021/11/30. -->
 <template>
-  <el-tooltip placement="top">
+  <el-tooltip placement="top" >
     <template #content>
       <span v-html="content"></span>
     </template>
-    <i class="icon-help"></i>
+    <el-icon><ele-InfoFilled /></el-icon>
   </el-tooltip>
 </template>
 

@@ -91,10 +91,6 @@ namespace Yahaha.WMS;
         /// </summary>
         public long? createuserid { get; set; }
         
-        /// <summary>
-        /// 修改者Id
-        /// </summary>
-        public long? updateuserid { get; set; }
         
         /// <summary>
         /// 软删除
