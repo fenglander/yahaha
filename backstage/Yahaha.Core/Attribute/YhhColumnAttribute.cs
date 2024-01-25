@@ -58,6 +58,10 @@ public class YhhColumn : Attribute
     /// cascade 删除关联记录后，当前记录也会被删除。
     /// </summary>
     public OnDelete OnDelete { get; set; }
+    /// <summary>
+    /// 强制必填
+    /// </summary>
+    public bool ForceRequired { get; set; } = false;
 }
 
 public enum RelationalType

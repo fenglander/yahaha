@@ -179,7 +179,6 @@ const getModel = async () => {
     queryParams.value.model = res.modelId;
   } else {
     const res = useSysModel().getSysModels(props.model);
-    console.log(res)
     queryParams.value.model = res.Id;
   }
 };

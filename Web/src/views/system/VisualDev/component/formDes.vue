@@ -53,7 +53,7 @@ import AceDrawer from '/@/components/yahaha/design/components/aceDrawer.vue'
 import { useVisualDev } from '/@/stores/visualDev';
 import selectModel from './selectModel.vue'
 import { ref, reactive, provide, onMounted } from 'vue'
-import { useDesignFormStore } from '/@/components/yahaha/design/store/designForm'
+import { useDesignFormStore } from '/@/stores/designForm'
 import { saveVisualDev, delVisualDev } from '/@/api/visualDev';
 import { ElMessage } from 'element-plus'
 import { useRoute } from 'vue-router'
@@ -220,6 +220,7 @@ const dialogConfirm = (editVal: string) => {
 }
 // 将数据保存在服务端
 const saveData = async () => {
+	state.formData = store.formDesginData;
 	let params: any = {
 		FormData: objToStringify(state.formData),
 		fullName: state.formData.form.fullName, // 表单名称，用于在显示所有已创建的表单列表里显示
@@ -259,9 +260,11 @@ const getInitData = () => {
 		state.loading = true;
 		const result = useVisualDev().getVisualDev(id);
 		if (result) {
-			state.formData = stringToObj(result.formData);
+			const formData = stringToObj(result.formData);
+			state.formData = formData;
 			state.formDict = string2json(result.formDict);
 			state.formData.form.resId = id;
+			store.setFormDesginData(formData);
 		}
 		state.loading = false;
 	} else {

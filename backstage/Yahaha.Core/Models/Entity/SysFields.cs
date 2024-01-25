@@ -5,7 +5,7 @@
 public class SysField:EntityBase
 {
 
-    [YhhColumn(ColumnDescription = "名称")]
+    [YhhColumn(ColumnDescription = "名称",ForceRequired = true)]
     public string Name { get; set; }
 
     [YhhColumn(ColumnDescription = "描述")]
@@ -82,4 +82,9 @@ public class SysField:EntityBase
     /// </summary>
     [YhhColumn(ColumnDescription = "删除关联操作")]
     public OnDelete? OnDelete { get; set; }
+    /// <summary>
+    /// 强制必填
+    /// </summary>
+    [YhhColumn(ColumnDescription = "强制必填")]
+    public bool ForceRequired { get; set; } = false;
 }

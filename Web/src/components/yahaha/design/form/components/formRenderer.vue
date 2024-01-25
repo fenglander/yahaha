@@ -11,30 +11,31 @@
 <script lang="ts" setup>
 import FormGroup from './formGroup.vue'
 import { computed, ref, watch, onUnmounted, onMounted, nextTick, provide } from 'vue'
-import type { FormData, } from '../../types'
+import type { FormData, FormList, } from '../../types'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import {
   constGetControlByName,
   constFormBtnEvent,
   constControlChange,
-  constTriggeredEvent,
+  constblurEvent,
   constFormProps,
   appendOrRemoveStyle, jsonParseStringify
 } from '../../utils'
 import { useSysModel } from '/@/stores/sysModel';
 import * as api from '/@/api/model/';
 import { applyFilter } from '../../utils/applyFilter'
+import { useDesignFormStore } from '/@/stores/designForm'
 const props = withDefaults(
   defineProps<{
     formData: FormData
-    type?: number // 1新增；2修改；3查看（表单模式）；4查看；5设计
+    type?: number // 1新增；2修改；3查看（表单模式）；5设计
     disabled?: boolean // 禁用表单提交
     requestUrl?: string // 编辑数据请求url
     value?: { [key: string]: any } // 表单初始值，同setValue
   }>(),
   {
-    type: 1, // 1新增；2修改；3查看（表单模式） ；4查看； 5设计
+    type: 1, // 1新增；2修改；3查看（表单模式）； 5设计
     formData: () => {
       return {
         list: [],
@@ -49,7 +50,7 @@ const props = withDefaults(
   }
 )
 
-const formDesginData = ref<FormData>();
+const formDesginData = ref<FormData>(props.formData);
 const formValues = ref<any>({});
 
 const emits = defineEmits<{
@@ -132,25 +133,37 @@ setWindowEvent()
 const resultDict = ref({})
 // 处理表单值开始
 
+
+
 // 表单组件值改变事件 tProp为子表格相关
 provide(constControlChange, async ({ key, value, data, tProp }: any) => {
   if (key) {
+    let fieldName = key; //默认是key
     if (tProp) {
+      console.log(tProp);
+      fieldName = tProp.split('.')[0];
       //setPropertyValue(tProp, value)
     } else {
       // 表格和弹性布局不是这里更新，只触change
       formValues.value[key] = value
     }
+    // 校验必填状态
+    console.log(key, data)
+
+    //setValidateReqFailedStatus(fieldName, tProp, value)
+
     // 触发更新关联字段值
-    TrigRelateFieldVals(key);
+    TrigRelateFieldVals(fieldName);
     // 当表格和弹性内的字段和外面字段冲突时，可通过tProps区分
     emits('change', { key, value, model: formValues.value, data, tProp })
   }
 })
 
+
 // 表单组件值改变事件 tProp为子表格相关
-provide(constTriggeredEvent, async (key: any) => {
+provide(constblurEvent, async (key: any, item: any, tProp: any) => {
   // 判断是否有触发函数
+  console.log('item', item, 'tProp', tProp);
   const fun = triggerList.value.find((item: any) => item.triggerKey === key);
   if (fun != null) {
     const params = {
@@ -186,15 +199,62 @@ const TrigRelateFieldVals = (key: string) => {
 
 }
 
-const setFieldStatus = () => {
-  formDesginData.value?.list.forEach((it: any) => {
-
-    if (it.readonlyExp) {
-      it.readonly = applyFilter(formValues.value, [it.readonlyExp]);
+const setFieldStatus = (data: FormList[]) => {
+  if (props.type === 5 || props.type === 3) { return; }
+  data.forEach((it: FormList) => {
+    if (it.Relate){
+      it.origReadonly = true;
+    }
+    else if (it.readonlyExp) {
+      it.origReadonly = evaluateExpression(it.readonlyExp)
+    }
+    if (it.invisibleExp) {
+      it.origInvisible = evaluateExpression(it.invisibleExp)
+    }
+    if (it.ForceRequired) {
+      it.origRequired = true
+    }
+    else if (it.requiredExp) {
+      it.origRequired = evaluateExpression(it.requiredExp)
+    }
+    
+    if (it.child && it.child.length > 0) {
+      setFieldStatus(it.child)
+    }
+    if (it.list) {
+      setFieldStatus(it.list)
     }
   })
-  console.log(formDesginData.value);
 }
+
+const evaluateExpression = (exp: any) => {
+  try {
+    if (/^[0-9]$/.test(exp)) {
+      return exp.toString === '0' ? false : true
+    }
+    // 检查是否以 "1=1" 或 "true" 开头
+    if (!exp.startsWith("[")) {
+      if (/^\d+([=<>])\d+$/.test(exp) || /^(true|false)$/.test(exp)) {
+        return eval(exp); // 使用eval进行简单的求值
+      }
+    }
+    if (!exp.startsWith("[")) {
+      if (/^\d+([=<>])\d+$/.test(exp) || /^(true|false)$/.test(exp)) {
+        return eval(exp); // 使用eval进行简单的求值
+      }
+    }
+    exp = exp.replace(/'/g, '"');
+    if (!exp.startsWith("[[")) {
+      exp = '[' + exp + ']';
+    }
+    return applyFilter(formValues.value, JSON.parse(exp));
+  } catch (error) {
+    console.error(`Expression Parsing failed:`, error);
+    return false;
+  }
+
+}
+
 
 const dictForm = computed(() => {
   const storage = window.localStorage.getItem('akFormDict')
@@ -216,7 +276,6 @@ const executeFunc = async (params?: any) => {
   })
   setLoading(false);
 }
-
 
 // 表单参数
 const formProps = computed(() => {
@@ -246,6 +305,9 @@ const getNameForEach = (data: any, name: string) => {
     if (['card', 'div'].includes(dataKey.type)) {
       temp = getNameForEach(dataKey.list, name)
     }
+    if (dataKey.child) {
+      temp = getNameForEach(dataKey.child, name)
+    }
   }
   return temp
 }
@@ -255,15 +317,35 @@ const getControlByName = (name: string) => {
 provide(constGetControlByName, getControlByName)
 // 表单检验方法
 const ruleForm = ref()
-const validate = (callback: any) => {
-  ruleForm.value.validate((valid: boolean, fields: any) => {
-    let fieldValue = fields
-    if (valid) {
-      // 校验通过，返回当前表单的值
-      fieldValue = getValue()
+
+const validate = () => {
+  let validateInfo = [] as any[];
+  formDesginData.value?.list.forEach((it: any) => {
+    if (it.origRequired && !formValues.value[it.Name]) {
+      validateInfo.push({ 'Lable': it.label, 'Name': it.Name })
     }
-    callback(valid, fieldValue)
+    if (it.child && it.child.length > 0) {
+      const childValue = formValues.value[it.Name];
+      const reqPropertyNames = it.child.filter((t: any) => t.origRequired).map((t: any) => t.Name)
+      let emptyIndexes: number[] = [];
+      childValue.forEach((data: any, index: number) => {
+        const isEmpty = reqPropertyNames.some((name: any) => data[name] === null || data[name] === undefined || data[name] === '');
+        if (isEmpty) {
+          emptyIndexes.push(index + 1);
+        }
+      });
+      validateInfo.push({ 'Lable': it.label, 'Name': it.Name, 'Indexes': emptyIndexes })
+    }
+    if (it.list && it.list.length > 0) {
+      it.list.forEach((t: any) => {
+        if (t.origRequired && !formValues.value[t.Name]) {
+          validateInfo.push({ 'Lable': it.label, 'Name': it.Name })
+        }
+      })
+    }
   })
+
+  return validateInfo
 }
 // 提供一个取值的方法
 const getValue = (filter?: boolean) => {
@@ -290,7 +372,10 @@ const setValue = (obj: { [key: string]: any }) => {
 }
 // 对表单设置初始值
 const setDesginData = (obj: any) => {
-  formDesginData.value = Object.assign({}, jsonParseStringify(obj))
+  let temp = Object.assign({}, jsonParseStringify(obj))
+  setFieldStatus(temp.list)
+  formDesginData.value = temp;
+
 }
 
 // 对表单选择项快速设置
@@ -368,12 +453,22 @@ watch(
 )
 // 表单设计初始值
 watch(
-  () => formValues.value,
-  (v: any) => {
-    v && setFieldStatus()
+  [() => formValues.value, () => props.type],
+  () => {
+    setFieldStatus(formDesginData.value?.list);
   },
   {
-    deep:true,
+    deep: true,
+    immediate: true
+  }
+)
+watch(
+  () => formDesginData.value?.list,
+  (v: any) => {
+    v && useDesignFormStore().setFormData(v);
+  },
+  {
+    deep: true,
     immediate: true
   }
 )

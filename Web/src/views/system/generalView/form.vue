@@ -9,6 +9,7 @@
         </el-button-group>
 
         <el-button-group>
+          <!-- <el-button type="danger" @click="validate()"> 校验 </el-button> -->
           <el-button type="primary" v-if="actionType === 3" @click="editFun"> 编辑 </el-button>
           <el-button type="primary" v-if="actionType === 1 || actionType === 2" @click="saveFun"> 保存 </el-button>
           <el-button v-if="actionType === 3" @click="cancelFun"> 新建 </el-button>
@@ -18,15 +19,15 @@
       </el-space>
     </div>
     <div class="body">
-      <formRenderer v-if="loadingComplete" :form-data="designData.formData" :type="actionType" :value="tempDataRecs"
-        @change="setDataRecs($event)" />
+      <formRenderer ref="rendererRef" v-if="loadingComplete" :form-data="designData.formData" :type="actionType"
+        :value="tempDataRecs" @change="setDataRecs($event)" />
     </div>
   </div>
 </template>
   
 <script setup lang="ts" name="yForm">
 import { ref, reactive, computed } from 'vue';
-import { ElNotification } from 'element-plus'
+import { ElMessage } from 'element-plus'
 import { useRouter, useRoute } from 'vue-router';
 import { stringToObj } from '/@/components/yahaha/design/utils/form';
 import { deepClone } from '/@/components/yahaha/design/utils'
@@ -43,7 +44,7 @@ const router = useRouter();
 const route = useRoute();
 const query = reactive(router.currentRoute.value.query);
 const currentRoute = reactive(router.currentRoute.value);
-
+const rendererRef = ref();
 const fields = ref<any>();
 const id = ref<any>();
 const tempDataRecs = ref<any>();
@@ -96,20 +97,46 @@ const editFun = async () => {
   actionType.value = 2;
 }
 
+const validate = () => {
+  const res = rendererRef.value.validate()
+  console.log(res);
+  if (res && res.length > 0) {
+    const detailStr = res.map((it: any) => {
+      return '栏目:' + it.Lable + (it.Indexes && it.Indexes.length > 0 ? ',行号:' + it.Indexes.join(',') : ';');
+    });
+    const msgStr: string = '<p>' + detailStr.join('</p><p>') + '</p>';
+    ElMessage({
+      showClose: true,
+      dangerouslyUseHTMLString: true,
+      message: '<strong>请先处理必填项</strong><p>请检查：</p>' + msgStr,
+      type: 'error',
+    })
+    return false
+  } else {
+    return true
+  }
+}
+
 const saveFun = async () => {
   loading.value = true;
+  if (!validate()) {
+    loading.value = false;
+    return;
+  }
   const params = {
     model: visualDev.value.modelId,
     data: dataRecs.value
   }
   const res = await api.generalSave(params);
   id.value = res.data.result;
-  ElNotification({
+  ElMessage({
     message: '保存成功',
     type: 'success',
   })
   Refresh();
 }
+
+console
 
 const cancelFun = async () => {
   getDataRecs();
@@ -142,7 +169,7 @@ const deleteFun = async () => {
     }
     const res = await api.generalDelete(params)
     if (res.status === 200) {
-      ElNotification({
+      ElMessage({
         message: ('删除成功'),
         type: 'success',
       })

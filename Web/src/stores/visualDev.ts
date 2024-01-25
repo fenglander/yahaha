@@ -20,9 +20,6 @@ export const useVisualDev = defineStore('visualDev', {
 			return this.visualDevList;
 		},
 		getVisualDev(id: any): any {
-			if (this.visualDevList.length === 0) {
-				this.setVisualDevList()
-			}
 			const visualDevList = toRaw(this.visualDevList);
 			let res;
 			visualDevList.forEach((it: any) => {
@@ -31,9 +28,6 @@ export const useVisualDev = defineStore('visualDev', {
 			return res
 		},
 		getVisualDevList() {
-			if (this.visualDevList.length === 0) {
-				this.setVisualDevList();
-			}
 			return this.visualDevList;
 		},
 

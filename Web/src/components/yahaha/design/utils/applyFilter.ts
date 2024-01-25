@@ -2,6 +2,9 @@ type Condition = [string, string, any];
 type Data = Record<string, any>;
 
 export function getFieldData(data: Data, field: string): any {
+    if (!data) {
+        return false;
+    }
     const fieldKeys = field.split('.');
     let fieldValue = data;
 
@@ -12,7 +15,6 @@ export function getFieldData(data: Data, field: string): any {
             return false;
         }
     }
-
     return fieldValue || false;
 }
 
@@ -29,7 +31,7 @@ function evaluateCondition(data: Data, condition: Condition): boolean {
             return fieldValue !== value;
         case 'in':
             let curValue = value;
-            if(!Array.isArray(value)){
+            if (!Array.isArray(value)) {
                 curValue = [value]
             }
             return curValue.includes(fieldValue);

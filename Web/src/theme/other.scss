@@ -1,7 +1,12 @@
 /* wangeditor 富文本编辑器
 ------------------------------- */
+@function adjust-brightness($color, $percentage) {
+	@return mix(black, $color, $percentage);
+}
+
 .editor-container {
 	z-index: 10; // 用于 wangeditor 点击全屏时
+
 	.w-e-toolbar {
 		border: 1px solid var(--el-border-color-light, #ebeef5) !important;
 		border-bottom: 1px solid var(--el-border-color-light, #ebeef5) !important;
@@ -9,6 +14,7 @@
 		border-top-right-radius: 3px;
 		z-index: 2 !important;
 	}
+
 	.w-e-text-container {
 		border: 1px solid var(--el-border-color-light, #ebeef5) !important;
 		border-top: none !important;
@@ -19,6 +25,7 @@
 }
 
 [data-theme='dark'] {
+	$base-color-danger: var(--el-color-danger);
 	// textarea - css vars
 	--w-e-textarea-bg-color: var(--el-color-white) !important;
 	--w-e-textarea-color: var(--el-text-color-primary) !important;
@@ -33,4 +40,11 @@
 	// modal - css vars
 	--w-e-modal-button-bg-color: var(--el-color-primary) !important;
 	--w-e-modal-button-border-color: var(--el-color-primary) !important;
+	--el-color-danger-dark-1: adjust-brightness(var(--el-color-danger), 90%);
+	--el-color-danger-dark-2: darken($base-color-danger, 20%);
+	--el-color-danger-dark-3: darken($base-color-danger, 30%);
+	--el-color-danger-dark-4: darken($base-color-danger, 40%);
+	--el-color-danger-dark-5: darken($base-color-danger, 50%);
+	--el-color-danger-dark-6: darken($base-color-danger, 60%);
+	--el-color-danger-dark-7: darken($base-color-danger, 70%);
 }

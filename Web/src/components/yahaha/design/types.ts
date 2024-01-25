@@ -19,7 +19,7 @@ export interface FormItem {
 export interface FormList {
   key: string
   fieldName: string
-  name: string
+  Name: string
   type: string
   isLayout?: boolean
   control: any // 当前type表单控件所有props
@@ -29,7 +29,20 @@ export interface FormList {
   columns?: any // 布局字段
   tableData?: any // 子表时
   options?: Options[] // radio,checkbox,select选项
+  origRequired?: boolean //原始必填状态，避免在动态设置时混淆
+  required?: boolean //必填
+  origInvisible?: boolean //原始隐藏状态，避免在动态设置时混淆
+  invisible?: boolean //隐藏
+  ForceRequired?: boolean //后端强制必填校验
+  validateReq?: boolean //必填校验
+  readonly?: boolean //只读，会在formitem.vue进一步处理
+  origReadonly?: boolean //原始只读状态，避免在动态设置时混淆
+  readonlyExp?: any
+  requiredExp?: any
+  invisibleExp?: any
+  Relate?: any // 是否为关联字段
   list?: any // 布局字段
+  child?: any // 子表字段
 }
 
 export interface widgetConfig {

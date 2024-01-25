@@ -103,24 +103,7 @@ const getFormField = (formId: Number) => {
   }
 };
 
-/**
- * 获取当前所选择的模型字段
- * @param model 表
- */
-const getModelField = (model: any) => {
-  const hideFields = ["", null, undefined] // 需要隐藏的字段名
-  let temp: any[] = [];
-  let res = useSysModel().getSysFieldsByModelId(model);
-  res.forEach((item: any) => {
-    if (item.SubFields) {
-      item.SubFields = item.SubFields.map((subItem: any) => {
-        if (!hideFields.includes(subItem.Name)) { return initField(subItem); }
-      });
-    }
-    if (!hideFields.includes(item.Name)) { temp.push(initField(item)); }
-  })
-  return temp;
-};
+
 
 
 const initField = (vals: any) => {
@@ -140,7 +123,7 @@ const initField = (vals: any) => {
   vals.key = null
   vals.control = { modelValue: '' }
   vals.config = {}
-  vals.list = []
+  vals.child = []
   filteredItem?.options.forEach((item: any) => {
     if (!(item.key in vals.config)) {
       // 默认
@@ -153,8 +136,19 @@ const initField = (vals: any) => {
   return vals;
 }
 
-const setModelFields = (val: any) => {
-  modelFields.value = getModelField(val)
+const setModelFields = (model: any) => {
+  const hideFields = ["", null, undefined] // 需要隐藏的字段名
+  let temp: any[] = [];
+  let res = useSysModel().getSysFieldsByModelId(model);
+  res.forEach((item: any) => {
+    if (item.SubFields) {
+      item.SubFields = item.SubFields.map((subItem: any) => {
+        if (!hideFields.includes(subItem.Name)) { return initField(subItem); }
+      });
+    }
+    if (!hideFields.includes(item.Name)) { temp.push(initField(item)); }
+  })
+  modelFields.value = temp;
 }
 setModelFields(props.modelId)
 

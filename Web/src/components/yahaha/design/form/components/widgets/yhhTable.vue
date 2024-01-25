@@ -1,34 +1,40 @@
 <!-- Created by 337547038 on 2021/9/29. -->
 <template>
-  <el-table v-bind="widgetConfig.control" :data="listData">
-    <el-table-column template v-for="(item) in config.list" :prop="item.name" :key="item.Id" :width="item.width"
-      :minWidth="item.minWidth" :fixed="emptyToNull(item.fixed)" :sortable="item.sortable" align="center" header-align="center">
+  <el-table v-bind="config.control" :data="childData" @row-click="rowclickEvent">
+    <el-table-column template v-for="item in config.child" :prop="item.name" :key="item.Id" :width="item.width"
+      :minWidth="item.minWidth" :fixed="emptyToNull(item.fixed)" :sortable="item.sortable" align="center"
+      header-align="center">
       <template #header>
         <el-tooltip :disabled="isEmptyRoNull(item.Help)" :content="item.Help" placement="top">
-          <span @click.stop="groupClick(item)">{{ item.Description }}</span>
+          <el-text :class="getDynamicClass(item)" @click.stop="groupClick(item)" tag="b">{{ item.Description }}</el-text>
         </el-tooltip>
       </template>
       <template #default="scope">
-        <form-item :data="item" :tProp="`${widgetConfig.name}.${scope.$index}.${item.name}`"
-          v-model="scope.row[item.name]" />
+        <component :is="curWidget(item.type)" :widgetConfig="setCurrStatus(item, scope, scope.$index === editIndex)"
+          v-model="scope.row[item.name]" @blur="blurEvent" />
+        <!-- <form-item :data="item" :tProp="`${widgetConfig.name}.${scope.$index}.${item.name}`" :editIndex="editIndex"
+          v-model="scope.row[item.name]" @blur="blurEvent" /> -->
       </template>
     </el-table-column>
-    <el-table-column v-if="!editDisabled" prop="action" label="操作" fixed="right">
+    <el-table-column v-if="!readonly" prop="action" label="操作" fixed="right">
       <template #default="scope">
-        <el-button link type="primary" @click="delColumn(scope.$index)">删除
+        <el-button link type="primary" @click="delRow(scope.$index)">删除
         </el-button>
       </template>
     </el-table-column>
   </el-table>
-  <el-button v-if="!editDisabled" class="mt-4" style="width: 100%" @click="addColumn">Add Item</el-button>
+  <el-button v-if="!readonly" class="mt-4" style="width: 100%" @click="addRow">Add Item</el-button>
 </template>
 
 <script setup lang="ts">
-import FormItem from '../formItem.vue'
-import { inject, computed, ref, watch } from 'vue'
-import { emptyToNull, isEmptyRoNull, constFormProps } from '../../../utils'
-import { useDesignFormStore } from '../../../store/designForm'
+//import FormItem from '../formItem.vue'
+import getWidget from '../widgets/getWidget'
+import { inject, computed, ref, watch, } from 'vue'
+import { emptyToNull, isEmptyRoNull, constFormProps, deepClone } from '../../../utils'
+import { debounce } from 'lodash-es';
+import { useDesignFormStore } from '/@/stores/designForm'
 import md5 from 'md5'
+import { FormList } from '../../../types'
 const props = withDefaults(
   defineProps<{
     widgetConfig: any,
@@ -39,38 +45,78 @@ const props = withDefaults(
 )
 const emits = defineEmits<{
   (e: 'update:modelValue', val: any): void
+  (e: 'update:widgetConfig', val: any): void
+  (e: 'blur', val: any): void // 表单组件值发生变化时
 }>()
 
+const blurEvent = (event: any) => {
+  emits('blur', event);
+}
+
 const store = useDesignFormStore() as any
-
+let updatingModelValue = false;
 const formProps = inject(constFormProps, {}) as any
-const widgetConfig = computed(() => {
-  return props.widgetConfig;
-}) as any
-const config = computed(() => {
-  return props.widgetConfig.config;
-}) as any
-//const tableDataNew: any = toRef(props.data, 'tableData')
-//const tableDataNew: any = toRef(formProps.value.model, props.data.name)
 
-const listData = ref<any[]>([]);
+//const config = ref(props.widgetConfig)
+const curWidget = (name: string) => {
+  //写的时候，组件的起名一定要与dragList中的element名字一模一样，不然会映射不上
+  return getWidget[name]
+}
+
+const config = computed({
+  get() {
+    return props.widgetConfig;
+    // if (modeType.value === 5) {
+    //   return props.widgetConfig;
+    // } else {
+    //   return deepClone(props.widgetConfig);
+    // }
+  },
+  set(newVal: any) {
+    if (modeType.value === 5) {
+      emits('update:widgetConfig', newVal)
+    }
+  }
+}) as any
+
+const editIndex = ref(0);
+
+const rowclickEvent = (row: any) => {
+  editIndex.value = childData.value.findIndex((it: any) => it.index === row.index);
+}
+const childData = ref<any[]>([]);
+
 
 const modeType = computed(() => {
   return formProps.value.type
 })
 // 如果编辑页禁用时，则返回true
-const editDisabled = computed(() => {
-  if (modeType.value === 3) {
-    return true // 查看模式，为不可编辑状态
-  }
-  if (modeType.value === 1 && config.value.readonly) {
-    return true
-  }
-  if (modeType.value === 2 && config.value.readonly) {
-    return true // 编辑模式
-  }
-  return false
+const readonly = computed(() => {
+  return props.widgetConfig.readonly
 })
+
+
+const setCurrStatus = (item: any, scope: any, isCur: boolean) => {
+  let temp = item;
+  if (modeType.value !== 5) {
+    temp = deepClone(item);
+  }
+  if (modeType.value === 3) {
+    temp.readonly = true; // 查看模式，为不可编辑状态
+  } else if ([1, 2].includes(modeType.value) && (readonly.value || item.origReadonly)) {
+    temp.readonly = true; // 编辑模式但只读
+  } else if (isCur) {// 是否当前行
+    temp.readonly = false;
+  } else {
+    temp.readonly = true;
+  }
+  const value = scope.row[temp.Name];
+  temp.validateReq = item.origRequired && !value;
+  if(isCur){
+    console.log(temp)
+  }
+  return temp
+}
 
 const getGroupName = (item: any) => {
   if (item.key) {
@@ -94,45 +140,69 @@ const groupClick = (item: any, ele?: string) => {
   store.setControlAttr(item)
 }
 
-const getlistData = () => {
-  const hasValue = props.modelValue && props.modelValue.length > 0
+const getEmptyData = () => {
   let data: any[] = [];
-  if (!hasValue) {
-    const result: { [key: string]: null } = {};
-    if (widgetConfig.value.SubFields) {
-      widgetConfig.value.SubFields.forEach((item: any) => {
-
-        result[item.name] = null;
-      });
-    }
-    data.push(result);
-  } else {
-    data = props.modelValue
+  const result: { [key: string]: null } = {};
+  if (config.value.SubFields) {
+    config.value.SubFields.forEach((item: any) => {
+      result[item.name] = null;
+    });
   }
-  listData.value = data
+  data.push(result);
+  return data
 }
 
-const delColumn = (index: number) => {
-  listData.value.splice(index, 1)
+const delRow = (index: number) => {
+  childData.value.splice(index, 1)
 }
 
-const addColumn = () => {
-  if (config.value.list.length > 0) {
+const addRow = () => {
+  if (config.value.child.length > 0) {
     const temp: any = {}
-    config.value.list.forEach((item: any) => {
+    config.value.child.forEach((item: any) => {
       if (item.name) {
         temp[item.name] = item.control.modelValue
       }
     })
-    listData.value.push(temp)
+
+    childData.value.push({ ...temp, index: childData.value.length })
   }
 }
+
+const getDynamicClass = (item: FormList) => {
+  // 在这里根据条件动态返回class
+  return {
+    'design-lable': modeType.value === 5,
+    'required-lable': item.origRequired,
+  };
+}
+
+const updateModelValue = debounce(
+  async function (newVal) {
+    if (!updatingModelValue) { // 如果不是在更新 childData 的过程中
+      updatingModelValue = true; // 设置标志位，表示开始更新 modelValue
+      await emits('update:modelValue', newVal);
+      updatingModelValue = false; // 更新完成，重置标志位
+    }
+  },
+  1000
+);
 
 // 监听双向绑定值改变，用于回显
 watch(
   () => props.modelValue,
   () => {
-    getlistData();
+    if (!updatingModelValue) { // 如果不是在更新 modelValue 的过程中
+      const hasValue = props.modelValue && props.modelValue.length > 0;
+      let temp;
+      if (hasValue) {
+        temp = props.modelValue;
+      } else {
+        temp = getEmptyData();
+      }
+      const tempAddIndex = temp.map((item: any, index: any) => ({ ...item, index }));
+      childData.value = tempAddIndex;
+    }
   },
   {
     deep: true, immediate: true
@@ -140,17 +210,17 @@ watch(
 );
 
 watch(
-  () => listData.value,
-  (newVal) => {
-    emits('update:modelValue', newVal);
+  () => childData.value,
+  async (newVal) => {
+    await updateModelValue(newVal);
   },
   {
-    deep: true, immediate: true
+    deep: true
   }
 );
 
 </script>
-<style  lang="scss">
+<style scoped lang="scss">
 $border-color: #3498db;
 $hover-border-color: darken($border-color, 10%); // 鼠标悬停时的颜色
 
@@ -164,5 +234,13 @@ $hover-border-color: darken($border-color, 10%); // 鼠标悬停时的颜色
     border: 2px solid $hover-border-color;
     font-weight: bold;
   }
+}
+
+.required-lable {
+  color: var(--el-color-danger);
+}
+
+.design-lable {
+  text-decoration: underline;
 }
 </style>

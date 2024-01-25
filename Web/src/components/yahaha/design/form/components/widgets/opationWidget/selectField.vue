@@ -47,6 +47,7 @@
 <script lang="ts" setup>
 import Sortable from 'sortablejs'
 import { computed, nextTick, onMounted, ref } from 'vue'
+import { key } from '/@/components/yahaha/design/utils'
 const props = withDefaults(
   defineProps<{
     modelValue: any
@@ -118,7 +119,10 @@ const handleSelect = (path: any, value?: boolean | null) => {
 
 const emit = defineEmits(['change'])
 const clickChild = () => {
-  const filteredList = fieldList.value.filter((item: { sel: boolean }) => item.sel);
+  const filteredList = fieldList.value.filter((item: { sel: boolean }) => item.sel).map((item:any)=>{
+    item.key = key();
+    return item;
+  });
   emit('change', filteredList)
 }
 

@@ -16,7 +16,8 @@ public static class ModelDbManager
         DataElement dataElement = new DataElement(db);
 
         // 获取所有实体表-初始化表结构
-        var entityTypes = App.EffectiveTypes.Where(u => !u.IsInterface && !u.IsAbstract && u.IsClass && (u.IsDefined(typeof(SugarTable), false) || u.IsDefined(typeof(YhhTableAttribute), false))).ToList();
+        var entityTypes = App.EffectiveTypes.Where(u => !u.IsInterface && !u.IsAbstract && u.IsClass 
+        && (u.IsDefined(typeof(SugarTable), false) || u.IsDefined(typeof(YhhTableAttribute), false))).ToList();
         if (!entityTypes.Any()) return;
         List<SysModels> ExistModelRecs = dbProvider.Queryable<SysModels>().ToList();
         List<SysField> ExistFieldInfoRecs = dbProvider.Queryable<SysField>().ToList();
@@ -81,6 +82,7 @@ public static class ModelDbManager
                     Field.Display = YhhColumnAttr?.Display != null ? YhhColumnAttr.Display : false;
                     Field.Related = YhhColumnAttr?.Related;
                     Field.OnDelete = YhhColumnAttr?.OnDelete;
+                    Field.ForceRequired = YhhColumnAttr?.ForceRequired != null ? YhhColumnAttr.ForceRequired : false;
                     UpdateFieldInfoRecs.Add(Field); 
                 }
             }

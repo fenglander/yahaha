@@ -1,14 +1,13 @@
 <template>
-  <yhhText v-if="editDisabled" v-model="display" ></yhhText>
+  <yhhText v-if="readonly" v-model="display" ></yhhText>
   <el-select v-model="value" v-else clearable filterable remote :remote-method="remoteMethod" :loading="loading">
     <el-option v-for="item in options" :key="item.id" :label="item.description" :value="item.id" />
   </el-select>
 </template>
 
 <script setup lang="ts">
-import { inject, computed, toRefs, ref, watch } from 'vue';
-import {
-  constFormProps, formatNumber, deepClone
+import { computed, toRefs, ref, watch } from 'vue';
+import {formatNumber, deepClone
 } from '../../../utils/'
 import yhhText  from './yhhText.vue'
 import { selRelObjectQuery } from '/@/api/widget';
@@ -40,11 +39,6 @@ const value = computed({
     emit('update:modelValue', result.value);
   }
 })
-
-const config = computed(() => {
-  return props.widgetConfig.config || {}
-})
-
 const lableName = computed(() => {
   const lables = useSysModel().getSysModelLables(props.widgetConfig.RelModel.TableName);
   return lables[lables.length - 1]
@@ -95,24 +89,11 @@ watch(
 );
 
 
-const editDisabled = computed(() => {
-  if (modeType.value === 3) {
-    return true // 查看模式，为不可编辑状态
-  }
-  if (modeType.value === 1 && config.value.readonly) {
-    return true
-  }
-  if (modeType.value === 2 && config.value.readonly) {
-    return true // 编辑模式
-  }
-  return false
+
+const readonly = computed(() => {
+  return props.widgetConfig.readonly
 })
 
-const formProps = inject(constFormProps, {}) as any
-
-const modeType = computed(() => {
-  return formProps.value.type
-})
 
 </script>
 

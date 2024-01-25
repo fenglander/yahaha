@@ -24,6 +24,12 @@ export function evil(fn: any) {
   return new Fn('return ' + fn)()
 }
 
+export const key = () => {
+  const timestamp = new Date().getTime().toString(); // 获取当前时间戳
+  const random = Math.random().toString(8).slice(2);
+  return 'yahaha' + timestamp + random;
+};
+
 // 定义两个空方法，用于在编辑事件时作为默认值
 export const beforeRequest =
   'opt=(data, route) => {\n' +
@@ -123,6 +129,30 @@ export const jsonParseStringify = (val: any) => {
     return JSON.parse(JSON.stringify(val))
   } else {
     return val
+  }
+}
+
+/**给关联字段赋值 
+ * @key 字段名
+ * @data 待处理数据
+ * @relateFieldList 关联列表
+*/
+export const TrigRelateFieldVals = (data:any,relateFieldList:any,key: string) => {
+  const relate = relateFieldList.value.filter((item: any) => { return item.relatedKey === key });
+  if (relate.length > 0) {
+    relate.forEach((it: any) => {
+      let relValue = data;
+      for (const prop of it.Related.split('.')) {
+        if (relValue && relValue.hasOwnProperty(prop)) {
+          relValue = relValue[prop];
+        } else {
+          // 属性不存在时可以选择处理错误或提供默认值
+          relValue = null;
+          break;
+        }
+      }
+      data[it.Name] = relValue;
+    });
   }
 }
 
@@ -280,4 +310,4 @@ export const constSetFormOptions = prefix + 'SetFormOptions' // 使用setOptions
 export const constGetControlByName = prefix + 'GetControlByName' // 根据name从formData.list查找数据
 export const constFormBtnEvent = prefix + 'FormBtnEvent' // 按钮组件事件
 export const constFormProps = prefix + 'FormProps' // 按钮组件事件
-export const constTriggeredEvent = prefix + 'TriggeredEvent' // 表单字段触发事件
+export const constblurEvent = prefix + 'BlurEvent' // 表单字段释放事件

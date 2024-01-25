@@ -37,12 +37,14 @@ public class ModelsService : IDynamicApiController, ITransient
     private readonly SqlSugarRepository<SysField> _sysFields;
     private readonly ISqlSugarClient _db;
     private static readonly ICache _cache = Cache.Default;
+    private readonly IHttpContextAccessor _context;
     private DataElement _de;
 
     public ModelsService(SqlSugarRepository<SysModels> sysModels,
         SqlSugarRepository<SysField> sysFields,
         IdentityService identityService,
         UserManager userManager,
+        IHttpContextAccessor context,
         ISqlSugarClient db)
     {
         _identitySvc = identityService;
@@ -50,6 +52,7 @@ public class ModelsService : IDynamicApiController, ITransient
         _sysModels = sysModels;
         _sysFields = sysFields;
         _db = db;
+        _context = context ?? throw new ArgumentNullException(nameof(context));
         _de = new DataElement(_db);
     }
 
@@ -95,7 +98,7 @@ public class ModelsService : IDynamicApiController, ITransient
             {
                 model = "SysModels",
                 items = Row,
-                maxLevel = 3,
+                maxLevel = 2,
             };
             ObjectRes = _de.DrillDownData(DrillDownParams);
             _cache.Set(cacheKey, ObjectRes, 0);
@@ -220,6 +223,7 @@ public class ModelsService : IDynamicApiController, ITransient
         {
             model = Model.TableName,
             items = Raw.Items.ToList(),
+            ConnectionId = App.HttpContext.Connection.Id,
         };
 
         var expandoList = _de.DrillDownData(DrillDownParams);
@@ -266,6 +270,7 @@ public class ModelsService : IDynamicApiController, ITransient
             model = Model.TableName,
             items = Row,
             maxLevel = 3,
+            ConnectionId = App.HttpContext.Connection.Id,
         };
         var res = _de.DrillDownData(DrillDownParams).FirstOrDefault();
 

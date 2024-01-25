@@ -1,13 +1,11 @@
 <template>
-  <yhhText v-if="editDisabled" v-model="display"></yhhText>
+  <yhhText v-if="readonly" v-model="display"></yhhText>
   <component v-else :is="componentType" v-model="val"></component>
 </template>
   
 <script setup lang="ts">
-import { inject, computed } from 'vue';
-import {
-  constFormProps,
-} from '../../../utils/'
+import { computed } from 'vue';
+
 import yhhText  from './yhhText.vue'
 const emit = defineEmits(['update:modelValue'])
 
@@ -46,25 +44,9 @@ const config = computed(() => {
 })
 
 
-const editDisabled = computed(() => {
-  if (modeType.value === 3) {
-    return true // 查看模式，为不可编辑状态
-  }
-  if (modeType.value === 1 && config.value.readonly) {
-    return true
-  }
-  if (modeType.value === 2 && config.value.readonly) {
-    return true // 编辑模式
-  }
-  return false
+const readonly = computed(() => {
+  return props.widgetConfig.readonly
 })
-
-const formProps = inject(constFormProps, {}) as any
-
-const modeType = computed(() => {
-  return formProps.value.type
-})
-
 
 const componentType = computed(() => {
   return `el-${config.value.componentType}`

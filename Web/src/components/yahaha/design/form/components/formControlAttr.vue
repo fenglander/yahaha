@@ -129,9 +129,8 @@
 <script lang="ts" setup>
 import { reactive, computed, toRefs, ref, watch, inject } from 'vue'
 //import { useRoute } from 'vue-router'
-import { useDesignFormStore } from '../../store/designForm'
+import { useDesignFormStore } from '/@/stores/designForm'
 import { useSysModel } from '/@/stores/sysModel';
-import validate from './validate'
 import { formatNumber, deepClone, readWidgetOptions } from '../../utils/'
 import { getFieldData, applyFilter } from '../../utils/applyFilter'
 import { baseAttrItem, formAttrItem, otherAttrItem } from './controlBaseAttr'
@@ -166,10 +165,10 @@ const controlData = computed({
     return store.controlAttr
   },
   set(newVal: any) {
-
     store.setControlAttr(newVal);
   }
 })
+
 const dataSourceOption = ref<any[]>()
 
 const curWidget = (name: string) => {
@@ -204,7 +203,12 @@ const widgetAttrList = computed(() => {
     if (item.dictPath) {
       item.dict = deepClone(controlData.value[item.dictPath])
     }
-    item.value = controlData.value.config[item.key]
+    // 获取值
+    if (item.path) {
+      item.value = getFieldData(controlData.value, item.path);
+    } else if (item.key) {
+      item.value = controlData.value.config[item.key];
+    }
     // 当属性不存在对应key则赋予初始值
     if (!(item.key in controlData.value.config)) {
       if (item.type === 'bool') {
@@ -298,7 +302,6 @@ const designType = inject('formDesignType')
 const state = reactive({
   dataSourceList: [],
   customRulesList: [
-    ...validate,
     {
       type: 'rules',
       label: '自定义正则'
@@ -329,15 +332,8 @@ watch(
 )
 const controlChange = (obj: any, val: any) => {
   // select多选属性，
-  switch (obj.eventName) {
-    case 'selectMultiple':
-      if (val) {
-        // 多选，将值改为数组
-        controlData.value.control.modelValue = []
-      } else {
-        // 单选
-        controlData.value.control.modelValue = ''
-      }
+  switch (obj.format) {
+    case 'json':
       break
   }
   if (obj.path) {
@@ -510,8 +506,22 @@ const getDataSource = async () => {
 
 // 表单属性修改
 const formAttrChange = (obj: any, val?: any) => {
-  formData.value[obj.path] = obj.value || val
+  if (obj && obj.value) {
+    console.log(obj);
+    formData.value[obj.path] = obj.value || val
+  }
 }
+
+watch(
+  () => formData.value,
+  (v: any) => {
+    v && store.setFormAttr(v);
+  },
+  {
+    deep: true,
+    immediate: true
+  }
+)
 
 const eventClick = (type: string, tooltip?: string) => {
   emits('openDialog', { type: type, title: tooltip, direction: 'ltr' })

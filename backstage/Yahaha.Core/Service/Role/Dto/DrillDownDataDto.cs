@@ -35,5 +35,9 @@ public class DrillDownDataDto
     /// 元数据
     /// </summary>
     public List<dynamic> items { get; set; }
+    /// <summary>
+    /// 链接ID唯一
+    /// </summary>
+    public string? ConnectionId { set; get; }
 
 }

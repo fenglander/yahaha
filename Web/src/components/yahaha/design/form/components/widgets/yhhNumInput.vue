@@ -1,17 +1,13 @@
 <template>
-  <yhhText v-if="disabled" v-model="display" ></yhhText>
-  <el-input-number v-model="value" v-else :placeholder="config.placeholder" :controls="false"
-    :precision="inputPrecision">
-
-  </el-input-number>
+  <yhhText v-if="readonly" v-model="display"></yhhText>
+  <el-input-number :class="{ 'validateReqFailed': validateReq }" v-model="value" v-else :placeholder="config.placeholder" :controls="false"
+    :precision="inputPrecision" />
 </template>
   
 <script setup lang="ts">
-import { inject, computed, toRefs, } from 'vue';
-import {
-  constFormProps, formatNumber
-} from '../../../utils/'
-import yhhText  from './yhhText.vue'
+import { computed, toRefs, } from 'vue';
+import { formatNumber } from '../../../utils/'
+import yhhText from './yhhText.vue'
 const emit = defineEmits(['update:modelValue'])
 
 const props = withDefaults(
@@ -25,7 +21,7 @@ const props = withDefaults(
 
 const { modelValue } = toRefs(props);
 
-const value = computed({ 
+const value = computed({
   get() {
     if (modelValue.value) {
       // 表格和弹性布局
@@ -47,27 +43,17 @@ const display = computed(() => {
   }
 })
 
+
 const config = computed(() => {
   return props.widgetConfig.config || {}
 })
 
-const disabled = computed(() => {
-  if (modeType.value === 3) {
-    return true // 查看模式，为不可编辑状态
-  }
-  if (modeType.value === 1 && config.value.addDisabled) {
-    return true
-  }
-  if (modeType.value === 2 && config.value.editDisabled) {
-    return true // 编辑模式
-  }
-  return false
+const readonly = computed(() => {
+  return props.widgetConfig.readonly
 })
 
-const formProps = inject(constFormProps, {}) as any
-
-const modeType = computed(() => {
-  return formProps.value.type
+const validateReq = computed(() => {
+  return props.widgetConfig.validateReq
 })
 
 const inputPrecision = computed(() => {
@@ -88,5 +74,11 @@ const inputPrecision = computed(() => {
 <style lang="scss" scoped>
 .el-input-number .el-input__inner {
   text-align: left;
+}
+
+.validateReqFailed {
+  :deep(.el-input__wrapper) {
+    background-color: var(--el-color-danger-light-3);
+  }
 }
 </style>

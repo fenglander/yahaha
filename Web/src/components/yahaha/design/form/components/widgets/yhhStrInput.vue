@@ -1,6 +1,6 @@
 <template>
-  <yhhText v-if="editDisabled" v-model="val" ></yhhText>
-  <el-input v-model="val" v-else :placeholder="config.placeholder" :type="inputType" :autosize="inputAutosize"
+  <yhhText v-if="widgetConfig.readonly" v-model="val" ></yhhText>
+  <el-input v-model="val" :class="{ 'validateReqFailed': widgetConfig.validateReq }" v-else :placeholder="config.placeholder" :type="inputType" :autosize="inputAutosize"
     :show-word-limit="inputShowWordLimit">
     <template #prepend v-if="config.prepend">
       {{ config.prepend }}
@@ -12,12 +12,10 @@
 </template>
   
 <script setup lang="ts">
-import { inject, computed } from 'vue';
+import { computed } from 'vue';
 import { FormList } from '../../../types'
 import yhhText  from './yhhText.vue'
-import {
-  constFormProps,
-} from '../../../utils/'
+
 
 const emit = defineEmits(['update:modelValue'])
 
@@ -42,24 +40,7 @@ const config = computed(() => {
   return props.widgetConfig.config || {}
 })
 
-const editDisabled = computed(() => {
-  if (modeType.value === 3) {
-    return true // 查看模式，为不可编辑状态
-  }
-  if (modeType.value === 1 && props.widgetConfig.readonly) {
-    return true
-  }
-  if (modeType.value === 2 && props.widgetConfig.readonly) {
-    return true // 编辑模式
-  }
-  return false
-})
 
-const formProps = inject(constFormProps, {}) as any
-
-const modeType = computed(() => {
-  return formProps.value.type
-})
 
 const inputAutosize = computed(() => {
   let res = {}
@@ -92,4 +73,13 @@ const inputShowWordLimit = computed(() => {
 
 
 </script>
+<style lang="scss" scoped>
+
+
+.validateReqFailed {
+  :deep(.el-input__wrapper) {
+    background-color: var(--el-color-danger-light-3);
+  }
+}
+</style>
   

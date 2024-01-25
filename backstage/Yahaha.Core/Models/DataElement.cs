@@ -6,6 +6,8 @@ using NewLife.Reflection;
 using Newtonsoft.Json.Linq;
 using OfficeOpenXml.FormulaParsing.Excel.Functions.RefAndLookup;
 using OfficeOpenXml.FormulaParsing.Excel.Functions.Text;
+using Org.BouncyCastle.Crypto;
+using Org.BouncyCastle.Tls;
 using System.Collections.Generic;
 using System.Dynamic;
 using System.Linq;
@@ -103,29 +105,71 @@ public class DataElement
     {
         var Fields = GetSysFields(Model).FindAll(it => it.Name != "Id");
         var dt = new Dictionary<string, object>();
+        Dictionary<string, object> Delted = new Dictionary<string, object>();
         bool IsUpdate = Obj.ContainsKey("Id") && Obj["Id"] != null && long.TryParse(Obj["Id"].ToString(), out long id) && id != 0;
         if (!IsUpdate)
         {
             id = SnowFlakeSingle.Instance.NextId();
             if (dt.ContainsKey("Id")) { dt["Id"] = id; } else { dt.Add("Id", id); }
         }
-        else { dt["Id"] = Obj["Id"]; }
+        else
+        {
+            dt["Id"] = Obj["Id"];
+            // 查询旧数据
+            var conModels = new List<IConditionalModel>
+            {
+                new ConditionalModel { FieldName = "\"Id\"", ConditionalType = ConditionalType.Equal, FieldValue =  Obj["Id"].ToString(), CSharpTypeName = "long" }
+            };
+            var raw = Search(Model).Where(conModels).ToList();
+            DrillDownDataDto DrillDownParams = new DrillDownDataDto
+            {
+                model = Model,
+                items = raw,
+                maxLevel = 1,
+            };
+            Delted = ToDictionaryList(DrillDownData(DrillDownParams)).First();
+        }
         for (int i = 0; i < Fields.Count; i++)
         {
             var Field = Fields[i];
-            // 匹配值
-            if (Obj.ContainsKey(Field.Name))
+            dynamic Value;
+            dynamic DelValue;
+            // 获取新值
+            if (Obj.TryGetValue(Field.Name, out var val)) { Value = val; } else { Value = null; }
+            // 校验必填
+            if(Field.ForceRequired && (Value == null || (long.TryParse(Value.ToString(), out long v) && v == 0) || string.IsNullOrEmpty(Value.ToString())))
             {
-                dynamic value = Obj[Field.Name];
-                if (value != null && !string.IsNullOrEmpty(value.ToString()))
+                throw new Exception(Field.Description + '[' + Field.Name + ']' + "不能为空");
+            }
+            // 获取原值
+            if (IsUpdate && Delted.TryGetValue(Field.Name, out var delVal)) { DelValue = delVal; } else { DelValue = null; }
+            // 对空值的处理
+            var NumType = new string[] { "Int64", "Int32", "Double", "Select" };
+            if (Field.Relate == true)
+            {
+                continue;
+            }
+            if (Field.tType == "Boolean" && (Value == null || string.IsNullOrEmpty(Value.ToString())))
+            {
+                Value = false;
+            }
+            else if (NumType.Contains(Field.tType) && (Value == null || string.IsNullOrEmpty(Value.ToString())))
+            {
+                Value = null;
+            }
+            else if (Value != null && string.IsNullOrEmpty(Value.ToString()))
+            {
+                Value = null;
+            }
+            // 匹配值
+            if (IsUpdate || Obj.ContainsKey(Field.Name))
+            {
+                if (IsUpdate || (Value != null && !string.IsNullOrEmpty(Value.ToString())))
                 {
-                    if (Field.Relate == true)
+                    
+                    if (Field.tType == "OneToMany")
                     {
-                        continue;
-                    }
-                    else if (Field.tType == "OneToMany")
-                    {
-                        List<Dictionary<string, object>> resultList = ToDictionaryList(value);
+                        List<Dictionary<string, object>> resultList = ToDictionaryList(Value);
                         for (int it = 0; it < resultList.Count; it++)
                         {   // 绑定主表
                             if (Field.tType == "Int64")
@@ -140,63 +184,56 @@ public class DataElement
                         //筛选出被删除的记录
                         if (IsUpdate)
                         {
-                            string ids = string.Join(",", resultList.Where(it => it.ContainsKey("Id") && it["Id"] != null && long.TryParse(it["Id"].ToString(), out long id) && id != 0).Select(it => it["Id"].ToString()).ToList());
-                            var conModels = new List<IConditionalModel>
-                            {
-                                new ConditionalModel { FieldName = "\"Id\"", ConditionalType = ConditionalType.NotIn, FieldValue = ids },
-                                new ConditionalModel { FieldName = "\"" + Field.Related + "\"", ConditionalType = ConditionalType.Equal, FieldValue = dt["Id"].ToString(), CSharpTypeName = "long" }
-                            };
-                            var DeleteRecs = Search(Field.RelModelName).Where(conModels).ToList();
-                            Delete(Field.RelModelName, DeleteRecs);
+                            List<long> ids = resultList.Where(it => it.ContainsKey("Id") && it["Id"] != null && long.TryParse(it["Id"].ToString(), out long id) && id != 0).Select(it => (long)it["Id"]).ToList();
+                            List<Dictionary<string, object>> DelValueList = ((List<ExpandoObject>)DelValue)
+                            .Select(e => (IDictionary<string, object>)e)
+                            .Select(d => d.ToDictionary(k => k.Key, k => k.Value))
+                            .ToList();
+                            var DeleteRecs = DelValueList.Where(it => it.ContainsKey("Id") && !ids.Contains(Convert.ToInt64(it["Id"]))).ToList();
+                            Delete(Field.RelModelName, (List<Dictionary<string, object>>)DeleteRecs);
                         }
                         AddElseUpdate(Field.RelModelName, resultList);
-
                         continue;
                     }
                     else if (Field.tType == "ManyToOne")
                     {
-                        if (value is Dictionary<string, object> dictionaryValue)
+                        if (Value is Dictionary<string, object> dictionaryValue)
                         {
                             // 访问 Id 属性
-                            value = (long)value["Id"];
+                            Value = (long)Value["Id"];
                             // 进行相应的处理
                         }
-                        else if (value is long)
+                        else if (Value is long)
                         {
-
-                            value = (long)value;
+                            Value = (long)Value;
                         }
-                        else
+                        else if (Value != null)
                         {
-                            value = (long)value.Id;
+                            Value = (long)Value.Id;
                         }
-
                     }
-                    dt.Add(Field.Name, value);
-                    continue;
                 }
             }
             // 默认值
-            if (Field.tType == "Boolean")
-            {
-                dt.Add(Field.Name, false);
-            }
             if (IsUpdate && Field.Name == "UpdateUser" && App.User != null)
             {
-                dt.Add(Field.Name, long.Parse(App.User?.FindFirst(ClaimConst.UserId)?.Value));
+                Value = long.Parse(App.User?.FindFirst(ClaimConst.UserId)?.Value);
             }
             else if (IsUpdate && Field.Name == "UpdateTime")
             {
-                dt.Add(Field.Name, DateTime.Now);
+                Value = DateTime.Now;
             }
             else if (!IsUpdate && Field.Name == "CreateTime")
             {
-                dt.Add(Field.Name, DateTime.Now);
+                Value = DateTime.Now;
             }
             else if (!IsUpdate && Field.Name == "CreateUser" && App.User != null)
             {
-                dt.Add(Field.Name, long.Parse(App.User?.FindFirst(ClaimConst.UserId)?.Value));
+                Value = long.Parse(App.User?.FindFirst(ClaimConst.UserId)?.Value);
             }
+
+            dt.Add(Field.Name, Value);
+            continue;
         }
         return dt;
     }
@@ -324,15 +361,15 @@ public class DataElement
         }
         else
         {
-            var cacheKey = $"GetFieldList,Model:{Params.model},RelField:{Params.relField},Id:{Params.id}";
+            
+            var cacheKey = $"DrillDownData,Model:{Params.model},RelField:{Params.relField},Id:{Params.id},ConnectionId:{Params.ConnectionId}";
             if (!_cache.TryGetValue(cacheKey, out TempValueList))
             {
                 // 如果缓存中没有值，则执行数据库查询
                 TempValueList = Search(Params.model).Where(string.Format("{0} = {1}", "\"" + Params.relField + "\"", Params.id)).ToList();
                 // 将查询结果添加到缓存中
-                _cache.Set(cacheKey, TempValueList, 10);
+                _cache.Set(cacheKey, TempValueList, 100);
             }
-            // TempValueList = Search(Params.model).Where(string.Format("{0} = {1}", "\""+Params.relField+ "\"", Params.id)).ToList();
         }
 
         foreach (var val in TempValueList)
@@ -363,6 +400,7 @@ public class DataElement
                                 relField = Field.Related,
                                 curLevel = nextLevel,
                                 maxLevel = Params.maxLevel,
+                                ConnectionId = Params.ConnectionId,
                             };
                             expando[Field.Name] = DrillDownData(nextParams);
                         }
@@ -377,6 +415,7 @@ public class DataElement
                                     relField = "Id",
                                     curLevel = nextLevel,
                                     maxLevel = Params.maxLevel,
+                                    ConnectionId = Params.ConnectionId,
                                 };
                                 var result = DrillDownData(nextParams)?.FirstOrDefault();
                                 expando[Field.Name] = result;

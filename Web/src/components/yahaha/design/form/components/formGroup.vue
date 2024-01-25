@@ -4,7 +4,6 @@
     group: 'form', ghostClass: 'ghost', animation: 300, handle: '.drag-move', disabled: type !== 5
   }" @add="draggableAdd">
     <template #item="{ element, index }">
-      <template v-if="!element.invisible">
         <div :class="getGroupClass(element)" :style="getFormItemStyle(element)" @click.stop="groupClick(element)"
           v-show="linksShow(element, index)">
           <template v-if="element.type === 'tabs'">
@@ -110,8 +109,6 @@
           </template>
         </div>
       </template>
-
-    </template>
   </draggable>
 </template>
 
@@ -121,10 +118,10 @@ import Draggable from 'vuedraggable-es'
 import FormItem from './formItem.vue'
 import Tooltips from '../../components/tooltip.vue'
 import FlexBox from './flexBox.vue'
-import { useDesignFormStore } from '../../store/designForm'
+import { useDesignFormStore } from '/@/stores/designForm'
 import type { FormList } from '../../types'
 import md5 from 'md5'
-import { deepClone,constFormBtnEvent, constFormProps } from '../../utils'
+import { deepClone,constFormBtnEvent, constFormProps, key } from '../../utils'
 const props = withDefaults(
   defineProps<{
     data: FormList[]
@@ -142,11 +139,8 @@ const props = withDefaults(
 }>()*/
 const store = useDesignFormStore() as any
 const formProps = inject(constFormProps, {}) as any
-const key = () => {
-  const timestamp = new Date().getTime().toString(); // 获取当前时间戳
-  const random = Math.random().toString(8).slice(2);
-  return 'yahaha' + timestamp + random;
-};
+
+
 const type = computed(() => {
   return formProps.value.type
 })

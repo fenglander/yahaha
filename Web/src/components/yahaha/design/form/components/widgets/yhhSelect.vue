@@ -1,5 +1,5 @@
 <template>
-  <yhhText v-if="editDisabled" v-model="value" ></yhhText>
+  <yhhText v-if="readonly" v-model="value" ></yhhText>
     <el-select v-model="value"  v-else clearable filterable :placeholder="config.placeholder">
     <el-option
       v-for="item in opations"
@@ -11,9 +11,9 @@
 </template>
   
 <script setup lang="ts">
-import { inject, computed, toRefs } from 'vue';
+import {  computed, toRefs } from 'vue';
 import {
-  constFormProps,formatNumber
+  formatNumber
 } from '../../../utils/'
 import yhhText  from './yhhText.vue'
 const emit = defineEmits(['update:modelValue'])
@@ -53,24 +53,12 @@ const opations = computed(() => {
 
 })
 
-const editDisabled = computed(() => {
-  if (modeType.value === 3) {
-    return true // 查看模式，为不可编辑状态
-  }
-  if (modeType.value === 1 && config.value.addDisabled) {
-    return true
-  }
-  if (modeType.value === 2 && config.value.editDisabled) {
-    return true // 编辑模式
-  }
-  return false
+const readonly = computed(() => {
+  return props.widgetConfig.readonly
 })
 
-const formProps = inject(constFormProps, {}) as any
+// const formProps = inject(constFormProps, {}) as any
 
-const modeType = computed(() => {
-  return formProps.value.type
-})
 
 // const inputPrecision = computed(() => {
 //   console.log(props.widgetConfig)
