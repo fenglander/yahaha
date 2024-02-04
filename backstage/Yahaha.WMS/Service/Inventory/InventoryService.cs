@@ -28,7 +28,6 @@ public class InventoryService : IDynamicApiController, ITransient
         var query= _rep.AsQueryable()
                     .WhereIF(!string.IsNullOrWhiteSpace(input.code), u => u.Code.Contains(input.code.Trim()))
                     .WhereIF(input.unit>0, u => u.Unit == input.unit)
-                    .WhereIF(input.createuserid>0, u => u.CreateUserId == input.createuserid)
 
                     .Select<InventoryOutput>()
 ;

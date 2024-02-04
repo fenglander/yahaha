@@ -92,7 +92,7 @@ public class DatabaseLoggingWriter : IDatabaseLoggingWriter
                 TraceId = logMsg.TraceId,
                 Exception = JSON.Serialize(loggingMonitor.exception),
                 Message = logMsg.Message,
-                CreateUserId = string.IsNullOrWhiteSpace(userId) ? 0 : long.Parse(userId),
+                CreateUser = string.IsNullOrWhiteSpace(userId) ? null : new SysUser { Id = long.Parse(userId) } ,
                 TenantId = string.IsNullOrWhiteSpace(tenantId) ? 0 : long.Parse(tenantId),
                 LogLevel = logMsg.LogLevel
             });
@@ -126,7 +126,7 @@ public class DatabaseLoggingWriter : IDatabaseLoggingWriter
                 LogDateTime = logMsg.LogDateTime,
                 Account = account,
                 RealName = realName,
-                CreateUserId = string.IsNullOrWhiteSpace(userId) ? 0 : long.Parse(userId),
+                CreateUser =  string.IsNullOrWhiteSpace(userId) ? null : new SysUser { Id = long.Parse(userId) },
                 TenantId = string.IsNullOrWhiteSpace(tenantId) ? 0 : long.Parse(tenantId),
                 LogLevel = logMsg.LogLevel
             });
@@ -162,7 +162,7 @@ public class DatabaseLoggingWriter : IDatabaseLoggingWriter
             TraceId = logMsg.TraceId,
             Exception = loggingMonitor.exception == null ? null : JSON.Serialize(loggingMonitor.exception),
             Message = logMsg.Message,
-            CreateUserId = string.IsNullOrWhiteSpace(userId) ? 0 : long.Parse(userId),
+            CreateUser = string.IsNullOrWhiteSpace(userId) ? null : new SysUser { Id = long.Parse(userId) },
             TenantId = string.IsNullOrWhiteSpace(tenantId) ? 0 : long.Parse(tenantId),
             LogLevel = logMsg.LogLevel
         });

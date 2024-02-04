@@ -33,7 +33,7 @@ export const useSysModel = defineStore('sysmodel', {
 			const sysModelList = toRaw(this.sysModelList);
 			let res;
 			sysModelList.forEach((it: any) => {
-				if (it.TableName === name) { res = it; return; }
+				if (it.Name === name) { res = it; return; }
 			})
 			return res
 		},
@@ -42,6 +42,7 @@ export const useSysModel = defineStore('sysmodel', {
 			return sysActionList.filter((it: any) => it.BindingModel.Id === id)
 		},
 		getSysModelsById(Id: any): any {
+			Id = Number(Id);
 			const sysModelList = toRaw(this.sysModelList);
 			let res;
 			sysModelList.forEach((it: any) => {
@@ -65,7 +66,7 @@ export const useSysModel = defineStore('sysmodel', {
 		getTitleByrForm(id: any, data: any[]): any {
 			//let lable: string = ""; //默认指端
 			const model = this.getSysModelsById(id);
-			const lables = this.getSysModelLables(model.TableName);
+			const lables = this.getSysModelLables(model.Name);
 			const excludedValues = [undefined, null, "", 0];
 			for (let i = lables.length - 1; i >= 0; i--) {
 				const lable = lables[i];
@@ -94,5 +95,16 @@ export const useSysModel = defineStore('sysmodel', {
 			})
 			return res
 		},
+
+		getRelateFieldList(Id: any): any {
+			const row = this.getSysFieldsByModelId(Id).filter((item: any) => item.Relate);
+			const res = row.map((item: any) => {
+				return {
+					...item, // 保留原始属性
+					relatedKey: item.Related.split('.')[0], // 增加新属性
+				};
+			});
+			return res;
+		}
 	}
 });

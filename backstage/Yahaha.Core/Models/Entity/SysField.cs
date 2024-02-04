@@ -1,11 +1,10 @@
 ﻿namespace Yahaha.Core.Models.Entity;
 
-[YhhTable("字段表","Name desc, Description")]
+[YhhTable("系统字段", "Name desc, Description")]
 [SystemTable]
-public class SysField:EntityBase
+public class SysField : EntityBase
 {
-
-    [YhhColumn(ColumnDescription = "名称",ForceRequired = true)]
+    [YhhColumn(ColumnDescription = "名称")]
     public string Name { get; set; }
 
     [YhhColumn(ColumnDescription = "描述")]
@@ -16,27 +15,31 @@ public class SysField:EntityBase
 
     [SugarColumn(ColumnDescription = "模型ID")]
     public long? ModelId { get; set; }
+
     /// <summary>
     /// 模型
     /// </summary>
     [YhhColumn(ColumnDescription = "模型", RelationalType = RelationalType.ManyToOne)]
-    public SysModels SysModel { get; set; }
+    public SysModel SysModel { get; set; }
 
     /// <summary>
-    /// 字段列表
+    /// 模型名称
     /// </summary>
     [YhhColumn(ColumnDescription = "模型名称", RelationalType = RelationalType.Relate, Related = "SysModel.Name")]
     public string? SysModelName { get; set; }
+
     /// <summary>
     /// 长度
     /// </summary>
     [YhhColumn(ColumnDescription = "长度")]
     public int? Length { set; get; }
+
     /// <summary>
     /// 小数点长度
     /// </summary>
     [YhhColumn(ColumnDescription = "小数精度")]
     public int? DecimalDigits { set; get; }
+
     /// <summary>
     /// 是否可以为null默为false
     /// </summary>
@@ -44,17 +47,18 @@ public class SysField:EntityBase
     public bool NotNull { set; get; }
 
     [YhhColumn(ColumnDescription = "关系模型", RelationalType = RelationalType.ManyToOne)]
-    public SysModels? RelModel { get; set; }
+    public SysModel? RelModel { get; set; }
+
     /// <summary>
     /// 字段列表
     /// </summary>
     [YhhColumn(ColumnDescription = "子表字段", RelationalType = RelationalType.Relate, Related = "RelModel.Fields")]
-    public List<SysField> SubFields { get; set; }
+    public List<SysField>? SubFields { get; set; }
 
     [YhhColumn(ColumnDescription = "类型")]
     public string? tType { get; set; }
 
-    [SugarColumn(ColumnDescription = "枚举值",ColumnDataType = StaticConfig.CodeFirst_BigString)]
+    [SugarColumn(ColumnDescription = "枚举值", ColumnDataType = StaticConfig.CodeFirst_BigString)]
     public string? EnumValue { get; set; }
 
     [SugarColumn(ColumnDescription = "关系模型名称")]
@@ -82,9 +86,5 @@ public class SysField:EntityBase
     /// </summary>
     [YhhColumn(ColumnDescription = "删除关联操作")]
     public OnDelete? OnDelete { get; set; }
-    /// <summary>
-    /// 强制必填
-    /// </summary>
-    [YhhColumn(ColumnDescription = "强制必填")]
-    public bool ForceRequired { get; set; } = false;
+
 }

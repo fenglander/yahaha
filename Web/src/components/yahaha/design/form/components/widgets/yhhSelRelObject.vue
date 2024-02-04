@@ -40,7 +40,7 @@ const value = computed({
   }
 })
 const lableName = computed(() => {
-  const lables = useSysModel().getSysModelLables(props.widgetConfig.RelModel.TableName);
+  const lables = useSysModel().getSysModelLables(props.widgetConfig.RelModelName);
   return lables[lables.length - 1]
 })
 

@@ -60,7 +60,7 @@
 
 
       <!-- 创建操作列 -->
-      <el-table-column label="操作" fixed="right" align="center" v-if="showActions()">
+      <el-table-column label="操作" fixed="right" align="center">
         <template v-slot="scope">
           <el-button type="primary" @click="Browse(scope.row)" text>查看</el-button>
           <el-button type="primary" @click="deleteRow(scope.row)" text>删除</el-button>
@@ -82,7 +82,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, PropType, ref, nextTick, computed, toRaw } from 'vue';
+import { onMounted, ref, nextTick, computed, toRaw } from 'vue';
 import formRenderer from './design/form/components/formRenderer.vue'
 import yColumn from './yColumn.vue';
 import ySearchItem from './search/ySearchItem.vue';
@@ -96,17 +96,18 @@ import { stringToObj } from '/@/components/yahaha/design/utils/form'
 import router from '/@/router';
 
 const props = defineProps({
-  model: {
-    type: String,
+  modelId: {
+    type: Number,
     required: false,
   },
   design: {
     type: Number,
     required: false,
   },
-  create: Boolean as PropType<boolean>,
-  edit: Boolean as PropType<boolean>,
-  del: Boolean as PropType<boolean>,
+  modelName: {
+    type: String,
+    required: false,
+  },
   formComp: {
     type: Object,
     required: false,
@@ -175,10 +176,13 @@ const getModel = async () => {
     // stores.setVisualDevList;
     const res = useVisualDev().getVisualDev(props.design)
     designData.value.id = props.design;
-    designData.value.formData = stringToObj(res.formData);
-    queryParams.value.model = res.modelId;
-  } else {
-    const res = useSysModel().getSysModels(props.model);
+    designData.value.formData = stringToObj(res.FormData);
+    queryParams.value.model = res.ModelId;
+  } else if (props.modelId) {
+    const res = useSysModel().getSysModelsById(props.modelId);
+    queryParams.value.model = res.Id;
+  }else{
+    const res = useSysModel().getSysModels(props.modelName);
     queryParams.value.model = res.Id;
   }
 };
@@ -285,8 +289,7 @@ const navRoute = () => {
   formType.value = 1;
   router.push({
     name: 'form',
-    query: { visualDev: props.design, id: curRow.value.Id },
-    state: { title: "xxx" }
+    query: { model: queryParams.value.model, visualDev: props.design, id: curRow.value.Id },
   })
 }
 
@@ -346,7 +349,7 @@ const createUserFilterSchemesDebounce = debounce(
     var params = {
       id: id,
       name: "默认",
-      tableName: props.model,
+      tableName: props.modelId,
       modelId: queryParams.value.model,
       defaultFields: JSON.stringify(primaryFields.value) as String,
     }
@@ -362,9 +365,6 @@ const createUserFilterSchemesDebounce = debounce(
   1000
 );
 
-const showActions = () => {
-  return props.create || props.edit || props.del;
-};
 //组合查询条件
 const compParams = () => {
   const combinedFilters = [...primaryFilterParams.value, ...filterParams.value];

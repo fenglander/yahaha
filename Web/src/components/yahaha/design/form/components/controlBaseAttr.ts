@@ -4,24 +4,27 @@ export const baseAttrItem = [
         type: 'string',
         //value: controlData.value.fieldName,
         placeholder: '字段名称',
+        readonly: true,
         path: 'fieldName'
+    },
+    {
+        label: '标题',
+        placeholder: '组件标题',
+        path: 'label',
+        type: 'string',
+    },
+    {
+        label: '隐藏标题',
+        path: 'hideLable',
+        type: 'switch',
     },
     {
         label: '组件类型',
         //value: controlData.value.type,
         placeholder: '组件类型',
-        path: 'type',
+        path: 'widget',
         type: 'select',
         //dict: widgetList.value
-    },
-    {
-        label: '控件标识',
-        //value: controlData.value.name,
-        type: 'string',
-        placeholder: '字段唯一标识，区分不同组件',
-        path: 'key',
-        format: 'filedNameKey',
-        readonly: true,
     },
     {
         label: '只读',
@@ -55,7 +58,22 @@ export const baseAttrItem = [
         show: ['and',
             ['isLayout', '==', false],
         ]
-    }
+    },
+    {
+        label: '控件标识',
+        //value: controlData.value.name,
+        type: 'string',
+        placeholder: '字段唯一标识，区分不同组件',
+        path: 'key',
+        format: 'filedNameKey',
+        readonly: true,
+    },
+    {
+        label: '是否容器',
+        path: 'isLayout',
+        type: 'select',
+        show: [false]
+    },
 ]
 
 export const otherAttrItem = [
@@ -64,20 +82,6 @@ export const otherAttrItem = [
         //value: controlData.value.config.className,
         placeholder: '样式类名',
         path: 'config.className'
-    },
-    {
-        label: '联动',
-        //value: controlData.value.config.linkKey,
-        type: 'switch',
-        path: 'config.linkKey'
-    },
-    {
-        label: '联动条件',
-        //value: controlData.value.config.linkResult,
-        type: 'string',
-        placeholder: '表达式如: $.input>1 $表示为当前表单数据，input为字段标识',
-        path: 'config.linkResult',
-        show: ['config.linkKey = true'],
     }]
 
 export const formAttrItem = [

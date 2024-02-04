@@ -54,6 +54,7 @@ const formDesginData = ref<FormData>(props.formData);
 const formValues = ref<any>({});
 
 const emits = defineEmits<{
+  (e: 'update:formData', val: any): void
   (e: 'btnClick', type: string): void
   (e: 'change', val: any): void // 表单组件值发生变化时
 }>()
@@ -74,20 +75,6 @@ const triggerList = computed(() => {
   }
 })
 
-const relateFieldList = computed(() => {
-  if (props.type !== 5) {
-    const row = useSysModel().getSysFieldsByModelId(formDesginData.value?.modelId).filter((item: any) => item.Relate);
-    const res = row.map((item: any) => {
-      return {
-        ...item, // 保留原始属性
-        relatedKey: item.Related.split('.')[0], // 增加新属性
-      };
-    });
-    return res;
-  } else {
-    return [];
-  }
-})
 
 const loading = ref(false)
 let timer = 0
@@ -180,7 +167,8 @@ provide(constblurEvent, async (key: any, item: any, tProp: any) => {
 })
 
 const TrigRelateFieldVals = (key: string) => {
-  const relate = relateFieldList.value.filter((item: any) => { return item.relatedKey === key });
+  const relateFieldList = useSysModel().getRelateFieldList(formDesginData.value?.modelId);
+  const relate = relateFieldList.filter((item: any) => { return item.relatedKey === key });
   if (relate.length > 0) {
     relate.forEach((it: any) => {
       let relValue = formValues.value;
@@ -202,7 +190,7 @@ const TrigRelateFieldVals = (key: string) => {
 const setFieldStatus = (data: FormList[]) => {
   if (props.type === 5 || props.type === 3) { return; }
   data.forEach((it: FormList) => {
-    if (it.Relate){
+    if (it.Relate || it.Name === 'Id') {
       it.origReadonly = true;
     }
     else if (it.readonlyExp) {
@@ -211,13 +199,13 @@ const setFieldStatus = (data: FormList[]) => {
     if (it.invisibleExp) {
       it.origInvisible = evaluateExpression(it.invisibleExp)
     }
-    if (it.ForceRequired) {
+    if (it.NotNull && it.Name !== 'Id') {
       it.origRequired = true
     }
     else if (it.requiredExp) {
       it.origRequired = evaluateExpression(it.requiredExp)
     }
-    
+
     if (it.child && it.child.length > 0) {
       setFieldStatus(it.child)
     }
@@ -334,7 +322,9 @@ const validate = () => {
           emptyIndexes.push(index + 1);
         }
       });
-      validateInfo.push({ 'Lable': it.label, 'Name': it.Name, 'Indexes': emptyIndexes })
+      if (emptyIndexes.length > 0) {
+        validateInfo.push({ 'Lable': it.label, 'Name': it.Name, 'Indexes': emptyIndexes })
+      }
     }
     if (it.list && it.list.length > 0) {
       it.list.forEach((t: any) => {
@@ -373,12 +363,43 @@ const setValue = (obj: { [key: string]: any }) => {
 // 对表单设置初始值
 const setDesginData = (obj: any) => {
   let temp = Object.assign({}, jsonParseStringify(obj))
+  matchFieldInfo(temp.list);
   setFieldStatus(temp.list)
+  console.log(temp)
   formDesginData.value = temp;
+}
+
+/**匹配字段信息 */
+const matchFieldInfo = (data: any, modelId?: any) => {
+  if (!modelId) {
+    modelId = props.formData.form.modelId
+  }
+  const fields = useSysModel().getSysFieldsByModelId(modelId);
+  data.forEach((it: FormList) => {
+    if (it.fieldName) {
+      const field = fields.find((item: any) => item.Name === it.fieldName);
+      if (!field) {
+        console.log(it)
+        throw new Error('未匹配到有效字段');
+      }
+      Object.assign(it, { ...field, ...jsonParseStringify(it) });
+    }
+    // 子表
+    if (Array.isArray(it.child) && it.child.length > 0) {
+      matchFieldInfo(it.child, it.RelModel.Id);
+    }
+    // 容器
+    if (Array.isArray(it.list) && it.list.length > 0) {
+      matchFieldInfo(it.list);
+    }
+  })
 
 }
 
 // 对表单选择项快速设置
+const refresh = () => {
+  formDesginData.value.list = [];
+}
 
 // 追加移除style样式
 const appendRemoveStyle = (type?: boolean) => {
@@ -392,6 +413,9 @@ const appendRemoveStyle = (type?: boolean) => {
     /* empty */
   }
 }
+
+// 清空表单设计
+
 
 // 按钮组件事件
 provide(constFormBtnEvent, (obj: any) => {
@@ -466,6 +490,7 @@ watch(
   () => formDesginData.value?.list,
   (v: any) => {
     v && useDesignFormStore().setFormData(v);
+    emits('update:formData', v);
   },
   {
     deep: true,
@@ -498,5 +523,6 @@ defineExpose({
   getValue,
   validate,
   resetFields,
+  refresh,
 })
 </script>

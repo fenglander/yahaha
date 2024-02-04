@@ -66,6 +66,7 @@ declare type RouteItem<T = any> = {
 	transUrl?: string;
 	title?: string;
 	visualDevId?: number;
+	modelId?: number;
 	id?: string | number;
 };
 

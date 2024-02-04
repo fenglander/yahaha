@@ -23,7 +23,7 @@ export const useVisualDev = defineStore('visualDev', {
 			const visualDevList = toRaw(this.visualDevList);
 			let res;
 			visualDevList.forEach((it: any) => {
-				if (parseFloat(it.id) === parseFloat(id)) { res = it; return; }
+				if (parseFloat(it.Id) === parseFloat(id)) { res = it; return; }
 			})
 			return res
 		},

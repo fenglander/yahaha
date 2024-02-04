@@ -25,7 +25,7 @@
 				<el-table-column type="index" label="序号" width="55" align="center" fixed />
 				<el-table-column prop="name" label="角色名称" align="center" show-overflow-tooltip />
 				<el-table-column prop="code" label="角色编码" align="center" show-overflow-tooltip />
-				<el-table-column label="数据范围" align="center" show-overflow-tooltip>
+				<!-- <el-table-column label="数据范围" align="center" show-overflow-tooltip>
 					<template #default="scope">
 						<el-tag effect="plain" v-if="scope.row.dataScope === 1">全部数据</el-tag>
 						<el-tag effect="plain" v-else-if="scope.row.dataScope === 2">本部门及以下数据</el-tag>
@@ -33,7 +33,7 @@
 						<el-tag effect="plain" v-else-if="scope.row.dataScope === 4">仅本人数据</el-tag>
 						<el-tag effect="plain" v-else-if="scope.row.dataScope === 5">自定义数据</el-tag>
 					</template>
-				</el-table-column>
+				</el-table-column> -->
 				<el-table-column prop="orderNo" label="排序" width="70" align="center" show-overflow-tooltip />
 				<el-table-column label="状态" width="70" align="center" show-overflow-tooltip>
 					<template #default="scope">
@@ -50,7 +50,7 @@
 							<el-button icon="ele-MoreFilled" size="small" text type="primary" style="padding-left: 12px" />
 							<template #dropdown>
 								<el-dropdown-menu>
-									<el-dropdown-item icon="ele-OfficeBuilding" @click="openGrantData(scope.row)" :disabled="!auth('sysRole:grantDataScope')"> 数据范围 </el-dropdown-item>
+									<!-- <el-dropdown-item icon="ele-OfficeBuilding" @click="openGrantData(scope.row)" :disabled="!auth('sysRole:grantDataScope')"> 数据范围 </el-dropdown-item> -->
 									<el-dropdown-item icon="ele-Delete" @click="delRole(scope.row)" divided :disabled="!auth('sysRole:delete')"> 删除角色 </el-dropdown-item>
 								</el-dropdown-menu>
 							</template>

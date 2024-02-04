@@ -46,12 +46,22 @@
 							</el-form-item>
 						</el-col>
 						<el-col :xs="24" :sm="12" :md="12" :lg="12" :xl="12" class="mb20">
+							<el-form-item label="系统模型">
+								<el-select v-model="state.ruleForm.modelId" clearable filterable remote reserve-keyword
+									placeholder="输入名称" remote-show-suffix :remote-method="getModelOptions"
+									@focus="getModelOptions" @change="clearVisualDev" :loading="loading">
+									<el-option v-for="item in modelOptions" :key="item.Id" :label="item.Name"
+										:value="item.Id" />
+								</el-select>
+							</el-form-item>
+						</el-col>
+						<el-col :xs="24" :sm="12" :md="12" :lg="12" :xl="12" class="mb20">
 							<el-form-item label="表单应用">
 								<el-select v-model="state.ruleForm.visualDevId" clearable filterable remote reserve-keyword
 									placeholder="输入名称" remote-show-suffix :remote-method="getVisualDevOptions"
-									:loading="loading">
-									<el-option v-for="item in visualDevOptions" :key="item.id" :label="item.fullName"
-										:value="item.id" />
+									@focus="getVisualDevOptions" @change="changeModelIdByVisualDev" :loading="loading">
+									<el-option v-for="item in visualDevOptions" :key="item.Id" :label="item.FullName"
+										:value="item.Id" />
 								</el-select>
 							</el-form-item>
 						</el-col>
@@ -60,10 +70,10 @@
 								<el-input v-model="state.ruleForm.path" :disabled="true" placeholder="路由路径" clearable />
 							</el-form-item>
 						</el-col>
-						<el-col v-if="!state.ruleForm.visualDevId" :xs="24" :sm="12" :md="12" :lg="12" :xl="12"
-							class="mb20">
+						<el-col :xs="24" :sm="12" :md="12" :lg="12" :xl="12" class="mb20">
 							<el-form-item label="组件路径">
-								<el-input v-model="state.ruleForm.component" placeholder="组件路径" clearable />
+								<el-input :disabled="![null, undefined, 0, ''].includes(state.ruleForm.modelId)"
+									v-model="state.ruleForm.component" placeholder="组件路径" clearable />
 							</el-form-item>
 						</el-col>
 						<el-col :xs="24" :sm="12" :md="12" :lg="12" :xl="12" class="mb20">
@@ -165,8 +175,10 @@ import { getAPI } from '/@/utils/axios-utils';
 import other from '/@/utils/other';
 import { SysMenuApi } from '/@/api-services/api';
 import { useVisualDev } from '/@/stores/visualDev';
-import { SysMenu, UpdateMenuInput } from '/@/api-services/models';
+import { useSysModel } from '/@/stores/sysModel';
 
+import { SysMenu, UpdateMenuInput } from '/@/api-services/models';
+import { formatNumber } from '/@/components/yahaha/design/utils/'
 const props = defineProps({
 	title: String,
 	menuData: Array<SysMenu>,
@@ -174,6 +186,7 @@ const props = defineProps({
 const emits = defineEmits(['handleQuery']);
 const loading = ref(false);
 const visualDevOptions = ref<any[]>();
+const modelOptions = ref<any[]>();
 const visualDevComponent = ref("/system/generalView/index");
 const requiredName = computed(() => {
 	return state.ruleForm.type === 1 || state.ruleForm.type === 2
@@ -206,14 +219,49 @@ const cancel = () => {
 	state.isShowDialog = false;
 };
 
-const getVisualDevOptions = () => {
+const getVisualDevOptions = (query?: string) => {
 	loading.value = true;
-	visualDevOptions.value = useVisualDev().getVisualDevList();
+	if (state.ruleForm.modelId) {
+		visualDevOptions.value = useVisualDev().getVisualDevList().filter((it: any) => it.ModelId === state.ruleForm.modelId)
+	} else {
+		visualDevOptions.value = useVisualDev().getVisualDevList();
+	}
+	if (query && query !== '' && query.constructor !== FocusEvent) {
+		visualDevOptions.value = visualDevOptions.value.filter((item: any) => item.FullName !== null && item.FullName.trim() !== "" && item.FullName.trim().indexOf(query) > -1)
+	}
 	// const res = await getVisualDevList(query);
 	// visualDevOptions.value = res.data?.result ?? [];
 	loading.value = false;
 }
-getVisualDevOptions()
+getVisualDevOptions();
+
+const clearVisualDev = () => {
+	const visualDev = useVisualDev().getVisualDev(state.ruleForm.visualDevId);
+	if (visualDev && visualDev.ModelId !== state.ruleForm.modelId) {
+		state.ruleForm.visualDevId = null
+	}
+}
+
+const changeModelIdByVisualDev = () => {
+	const visualDev = useVisualDev().getVisualDev(state.ruleForm.visualDevId);
+	if (visualDev) {
+		state.ruleForm.modelId = formatNumber(visualDev.ModelId);
+	}
+}
+
+const getModelOptions = (query?: string) => {
+	loading.value = true;
+	if (query && query !== '' && query.constructor !== FocusEvent) {
+		console.log(query.constructor)
+		const res = useSysModel().sysModelList;
+		modelOptions.value = res.filter((item: any) => item.Name !== null && item.Name.trim() !== "" && item.Name.trim().indexOf(query) > -1)
+	} else {
+		modelOptions.value = useSysModel().sysModelList;
+	}
+	loading.value = false;
+}
+getModelOptions();
+
 // 提交
 const submit = () => {
 	ruleFormRef.value.validate(async (valid: boolean) => {
@@ -248,7 +296,7 @@ const findNodeById = (treeNode: any[] | undefined, targetId: number) => {
 };
 
 const afterSubmit = () => {
-	if (state.ruleForm.visualDevId) {
+	if (state.ruleForm.modelId) {
 		state.ruleForm.component = visualDevComponent.value;
 	}
 	let path = ""

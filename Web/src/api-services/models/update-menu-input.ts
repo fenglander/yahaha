@@ -99,6 +99,12 @@ export interface UpdateMenuInput {
      */
     visualDevId?: number | null;
     /**
+     * 模型id
+     * @type {number}
+     * @memberof UpdateMenuInput
+     */
+    modelId?: number | null;
+    /**
      * 权限标识
      * @type {string}
      * @memberof UpdateMenuInput

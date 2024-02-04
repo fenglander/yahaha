@@ -20,17 +20,17 @@ public class WidgetSerivce : IDynamicApiController, ITransient
 {
     private readonly IdentityService _identitySvc;
     private readonly UserManager _userManager;
-    private readonly SqlSugarRepository<SysModels> _sysModels;
-    private readonly SqlSugarRepository<SysField> _sysFields;
+    private readonly SqlSugarRepository<SysModel> _sysModel;
+    private readonly SqlSugarRepository<SysField> _sysField;
     private readonly ISqlSugarClient _db;
     private DataElement _de;
 
-    public WidgetSerivce(IdentityService identitySvc, UserManager userManager, SqlSugarRepository<SysModels> sysModels, SqlSugarRepository<SysField> sysFields, ISqlSugarClient db)
+    public WidgetSerivce(IdentityService identitySvc, UserManager userManager, SqlSugarRepository<SysModel> sysModel, SqlSugarRepository<SysField> sysField, ISqlSugarClient db)
     {
         _identitySvc = identitySvc;
         _userManager = userManager;
-        _sysModels = sysModels;
-        _sysFields = sysFields;
+        _sysModel = sysModel;
+        _sysField = sysField;
         _db = db;
         _de = new DataElement(_db);
     }

@@ -47,7 +47,7 @@ public class VisualDev : EntityBase
     /// 模型
     /// </summary>
     [YhhColumn(ColumnDescription = "模型",RelationalType = RelationalType.ManyToOne)]
-    public SysModels SysModel { get; set; }
+    public SysModel SysModel { get; set; }
     /// <summary>
     /// 表单配置
     /// </summary>

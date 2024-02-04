@@ -30,14 +30,14 @@ import { ref, reactive, computed } from 'vue';
 import { ElMessage } from 'element-plus'
 import { useRouter, useRoute } from 'vue-router';
 import { stringToObj } from '/@/components/yahaha/design/utils/form';
-import { deepClone } from '/@/components/yahaha/design/utils'
+import { deepClone, key, formatNumber } from '/@/components/yahaha/design/utils'
 import pinia from '/@/stores/index';
 import mittBus from "/@/utils/mitt";
 import formRenderer from '/@/components/yahaha/design/form/components/formRenderer.vue'
 import { useVisualDev } from '/@/stores/visualDev';
 import { useSysModel } from '/@/stores/sysModel';
 import * as api from '/@/api/model/';
-import type { FormData } from '/@/components/yahaha/design/types';
+import type { FormData, FormList } from '/@/components/yahaha/design/types';
 const visualDevStores = useVisualDev(pinia);
 
 const router = useRouter();
@@ -62,9 +62,18 @@ const visualDev = computed(() => {
   }
 })
 
+
+const sysModel = computed(() => {
+  if (query) {
+    return useSysModel().getSysModelsById(formatNumber(query.model));
+  } else {
+    return null
+  }
+})
+
 const title = computed(() => {
   if (id.value && dataRecs.value) {
-    return useSysModel().getTitleByrForm(visualDev.value.modelId, dataRecs.value)
+    return useSysModel().getTitleByrForm(sysModel.value.Id, dataRecs.value)
   } else {
     return '新建';
   }
@@ -72,7 +81,7 @@ const title = computed(() => {
 
 const functionList = computed(() => {
   if (visualDev.value) {
-    return useSysModel().getSysActionById(visualDev.value.modelId).filter((item: any) => item.Function);
+    return useSysModel().getSysActionById(sysModel.value.Id).filter((item: any) => item.Function);
   } else {
     return [];
   }
@@ -87,8 +96,31 @@ const designData = computed(() => {
     },
   }
   if (visualDev.value) {
-    res.formData = stringToObj(visualDev.value.formData);
-    res.formData.modelId = visualDev.value.modelId;
+    res.formData = stringToObj(visualDev.value.FormData);
+    res.formData.modelId = visualDev.value.ModelId;
+  } else {
+    const tempForm = {
+      openMethod: 1,
+      modelId: sysModel.value.Id,
+      modelName: sysModel.value.Name,
+      fullName: sysModel.value.Description,
+      sysModel: {
+        Id: sysModel.value.Id
+      }
+    }
+    let tempList: FormList[] = []
+    sysModel.value.Fields.forEach((it: any) => {
+      tempList.push({
+        fieldName: it.Name,
+        label: it.Description,
+        key: key(),
+        control: undefined,
+        config: undefined
+      })
+    })
+    res.formData.form = tempForm;
+    res.formData.list = tempList;
+    console.log('自动生成表单设计', res.formData)
   }
   return res;
 })
@@ -108,7 +140,7 @@ const validate = () => {
     ElMessage({
       showClose: true,
       dangerouslyUseHTMLString: true,
-      message: '<strong>请先处理必填项</strong><p>请检查：</p>' + msgStr,
+      message: '<strong>尚有必填项未处理</strong><p>请检查：</p>' + msgStr,
       type: 'error',
     })
     return false
@@ -124,7 +156,7 @@ const saveFun = async () => {
     return;
   }
   const params = {
-    model: visualDev.value.modelId,
+    model: sysModel.value.Id,
     data: dataRecs.value
   }
   const res = await api.generalSave(params);
@@ -164,7 +196,7 @@ const deleteFun = async () => {
   if (dataRecs.value.Id) {
     let ids = [dataRecs.value.Id]
     const params = {
-      model: visualDev.value.modelId,
+      model: sysModel.value.Id,
       ids: ids
     }
     const res = await api.generalDelete(params)
@@ -184,7 +216,7 @@ const Refresh = () => {
     mittBus.emit('onCurrentContextmenuClick', Object.assign({}, { contextMenuClickId: 1, ...route }));
     router.replace({
       path: currentRoute.path,
-      query: { visualDev: query.visualDev, id: id.value },
+      query: { model: query.model, visualDev: query.visualDev, id: id.value },
     });
   } else {
     getDataRecs();
@@ -200,12 +232,12 @@ const getDataRecs = async () => {
   loading.value = true;
   if (id.value) {
     actionType.value = 3;
-    let res = await api.generalFormData({ 'model': visualDev.value.modelId, 'id': id.value ?? 0 });
+    let res = await api.generalFormData({ 'model': sysModel.value.Id, 'id': id.value ?? 0 });
     if (res && res.status === 200 && res.data.result) {
       tempDataRecs.value = deepClone(res.data.result)
     }
   } else {
-    fields.value = useSysModel().getSysFieldsByModelId(visualDev.value.modelId);
+    fields.value = useSysModel().getSysFieldsByModelId(sysModel.value.Id);
     let temp: any = {}
     fields.value.forEach((it: any) => {
       temp[it.Name] = null;

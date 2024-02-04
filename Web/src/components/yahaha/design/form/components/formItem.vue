@@ -2,13 +2,13 @@
 <template>
   <template v-if="!itemInfo.invisible">
     <el-form-item v-bind="itemInfo.item" :prop="tProp || itemInfo.Name" :class="config.className"
-      :label="getLabel(itemInfo.item as FormItem)">
+      :label="getLabel(itemInfo as FormItem)">
       <template #label>
         <el-tooltip :disabled="isEmptyRoNull(config.help)" :content="config.help" placement="top">
-          <el-text :style="{ color: textColor }" tag="b">{{ getLabel(itemInfo.item) }}</el-text>
+          <el-text :style="{ color: textColor }" tag="b">{{ getLabel(itemInfo) }}</el-text>
         </el-tooltip>
       </template>
-      <component :is="curWidget(itemInfo.type)" :widgetConfig="itemInfo" v-model="value" @blur="blurEvent" />
+      <component :is="curWidget(itemInfo.curWidget)" :widgetConfig="itemInfo" v-model="value" @blur="blurEvent" />
     </el-form-item>
   </template>
 </template>
@@ -19,8 +19,6 @@ import {
   onMounted,
   computed,
   onUnmounted,
-  ref,
-  watch,
 } from 'vue'
 import { FormItem, FormList } from '../../types'
 import getWidget from './widgets/getWidget'
@@ -28,7 +26,8 @@ import {
   constControlChange,
   constFormProps,
   constblurEvent,
-  isEmptyRoNull, jsonParseStringify
+  isEmptyRoNull, jsonParseStringify,
+  readWidgetOptions
 } from '../../utils/'
 
 const props = withDefaults(
@@ -47,7 +46,66 @@ const emits = defineEmits<{
   (e: 'update:data', val: any): void
 }>()
 
-const itemInfo = ref(props.data);
+const itemInfo = computed({
+  get() {
+    let temp = props.data;
+    if (type.value !== 5) {
+      temp = jsonParseStringify(temp)
+    }
+    if ([null, undefined, 0, ''].includes(props.data.curWidget)) {
+      getDefaultWidget(temp);
+      if (temp.child) {
+        temp.child.forEach((it: FormList) => {
+          getDefaultWidget(it);
+        })
+      }
+      if (temp.list) {
+        temp.list.forEach((it: FormList) => {
+          getDefaultWidget(it);
+        })
+      }
+    }
+    // 设置状态
+    if (type.value === 3) {
+      temp.readonly = true // 查看模式，为不可编辑状态
+    }
+    else if ([1, 2].includes(type.value) && temp.origReadonly) {
+      temp.readonly = true // 编辑模式
+    }
+    temp.validateReq = temp.origRequired && !value.value;
+
+    return temp
+  },
+  set(v) {
+    emits('update:data', v)
+  }
+})
+
+const getDefaultWidget = (info: FormList) => {
+  if ([null, undefined, 0, ''].includes(info.widget)) {
+    const widget = readWidgetOptions()
+    const filteredItem: any = widget.find(item => {
+      if (item.fieldType.includes('*')) {
+        return true
+      }
+      else {
+        return item.fieldType.includes(info.tType)
+      }
+    });
+    info.curWidget = filteredItem.name;
+    if (!info.config) {
+      info.config = {};
+    }
+    filteredItem?.options.forEach((item: any) => {
+      if (!(item.key in info.config) && item.default) {
+        item.value = item.default;
+        info.config[item.key] = item.default;
+      }
+    })
+  } else {
+    info.curWidget = info.widget;
+  }
+}
 
 
 const formProps = inject(constFormProps, {}) as any
@@ -56,7 +114,7 @@ const type = computed(() => {
 })
 
 const config = computed(() => {
-  return props.data.config || {}
+  return itemInfo.value.config || {}
 })
 
 
@@ -83,7 +141,7 @@ const changeEvent = inject(constControlChange, '') as any
 const updateModel = (val: any) => {
   changeEvent &&
     changeEvent({
-      key: props.data.Name,
+      key: itemInfo.value.Name,
       value: val,
       data: itemInfo,
       tProp: props.tProp
@@ -93,8 +151,8 @@ const triggeredEvent = inject(constblurEvent, '') as any
 const blurEvent = () => {
   triggeredEvent &&
     triggeredEvent(
-      props.data.Name,
-      props.data,
+      itemInfo.value.Name,
+      itemInfo.value,
       props.tProp,
     )
 }
@@ -121,10 +179,10 @@ const curWidget = (name: string) => {
 
 // 当通用修改属性功能添加新字段时，数组更新但toRefs没更新
 
-const getLabel = (ele: FormItem | undefined) => {
+const getLabel = (ele: any | undefined) => {
   const showColon = formProps.value.showColon ? ':' : ''
   if (ele) {
-    return ele.showLabel ? '' : ele.label + showColon
+    return ele.hideLable ? '' : ele.label + showColon
   } else {
     return ''
   }
@@ -150,36 +208,30 @@ const textColor = computed(() => {
 // )
 
 
-const setCurrStatus = (data: any) => {
-  if (type.value === 3) {
-    data.readonly = true // 查看模式，为不可编辑状态
-  }
-  else if ([1, 2].includes(type.value) && data.origReadonly) {
-    data.readonly = true // 编辑模式
-  }
-  else if (props.tProp) {
-    if (props.tProp.split('.')[1] == props.editIndex?.toString()) {
-      data.readonly = false
-    } else {
-      data.readonly = true
-    }
-  }
-  data.validateReq = data.origRequired && !value.value;
-  return data;
-}
+// const setCurrStatus = (data: any) => {
 
-watch(
-  [() => props.data, () => props.editIndex, () => type.value, () => value.value],
-  () => {
-    if (type.value === 5) { return; } // 设计模式时不做判断
-    let temp = jsonParseStringify(props.data); // 切断响应
-    itemInfo.value = setCurrStatus(temp);
-    //console.log('Index',props.tProp?.split('.')[1],'editIndex',props.editIndex?.toString(),'itemInfo',itemInfo.value.readonly,'temp',temp.readonly)
-  },
-  {
-    deep: true, immediate: true
-  }
-);
+//   if (type.value === 3) {
+//     data.readonly = true // 查看模式，为不可编辑状态
+//   }
+//   else if ([1, 2].includes(type.value) && data.origReadonly) {
+//     data.readonly = true // 编辑模式
+//   }
+//   data.validateReq = data.origRequired && !value.value;
+//   return data;
+// }
+
+// watch(
+//   [() => props.data,() => type.value, () => value.value],
+//   () => {
+//     if (type.value === 5) { return; } // 设计模式时不做判断
+//     let temp = jsonParseStringify(props.data); // 切断响应
+//     itemInfo.value = setCurrStatus(temp);
+//     //console.log('Index',props.tProp?.split('.')[1],'editIndex',props.editIndex?.toString(),'itemInfo',itemInfo.value.readonly,'temp',temp.readonly)
+//   },
+//   {
+//     deep: true, immediate: true
+//   }
+// );
 
 // watch(
 //   () => props.data,

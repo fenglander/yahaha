@@ -7,9 +7,6 @@
 // 软件按“原样”提供，不提供任何形式的明示或暗示的保证，包括但不限于对适销性、适用性和非侵权的保证。
 // 在任何情况下，作者或版权持有人均不对任何索赔、损害或其他责任负责，无论是因合同、侵权或其他方式引起的，与软件或其使用或其他交易有关。
 
-using Org.BouncyCastle.Asn1.Cms;
-using SqlSugar;
-using System.ComponentModel;
 using Yahaha.Core.Models;
 
 namespace Yahaha.Core;
@@ -45,7 +42,13 @@ public static class SqlSugarSetup
         services.AddSingleton<ISqlSugarClient>(sqlSugar); // 单例注册
         services.AddScoped(typeof(SqlSugarRepository<>)); // 仓储注册
         services.AddUnitOfWork<SqlSugarUnitOfWork>(); // 事务与工作单元注册
-
+        // 数据元注册
+        services.AddSingleton(provider =>
+        {
+            // 在这里获取 ISqlSugarClient 实例并传递给 DataElement 的构造函数
+            var sqlSugarClient = provider.GetRequiredService<ISqlSugarClient>();
+            return new DataElement(sqlSugarClient);
+        });
         // 初始化数据库表结构及种子数据
         dbOptions.ConnectionConfigs.ForEach(config =>
         {
@@ -53,6 +56,7 @@ public static class SqlSugarSetup
             //初始化所有模块表结构.Fung
             ModelDbManager.UpdateModelInfo(sqlSugar, config);
             ModelDbManager.UpdateModelAction(sqlSugar, config);
+            ModelDbManager.SeedDataCreation(sqlSugar, config);
         });
     }
 
@@ -68,9 +72,9 @@ public static class SqlSugarSetup
             {
                 // entity.IsDisabledDelete = true; // 禁止删除非 sqlsugar 创建的列
                 // 只处理贴了特性[SugarTable]表
-                if (!type.GetCustomAttributes<SugarTable>().Any() && !type.GetCustomAttributes<YhhTableAttribute>().Any())
+                if (!type.GetCustomAttributes<SugarTable>().Any() && !type.GetCustomAttributes<YhhTable>().Any())
                     return;
-                var attribute = type.GetCustomAttribute<YhhTableAttribute>();
+                var attribute = type.GetCustomAttribute<YhhTable>();
                 if (attribute != null)
                 {
                     entity.DbTableName = type.Name;
@@ -83,7 +87,10 @@ public static class SqlSugarSetup
             {
                 // 只处理贴了特性[SugarColumn]列
                 if (!type.GetCustomAttributes<SugarColumn>().Any() && !type.GetCustomAttributes<YhhColumn>().Any())
+                {
+                    column.IsIgnore = true;
                     return;
+                }
                 var attributes = type.GetCustomAttributes<SugarColumn>();
                 if (new NullabilityInfoContext().Create(type).WriteState is NullabilityState.Nullable)
                     column.IsNullable = true;
@@ -107,7 +114,8 @@ public static class SqlSugarSetup
                     if (yahaha.DecimalDigits > 0) { column.DecimalDigits = yahaha.DecimalDigits; }
                     if (yahaha.IsJson) { column.IsJson = yahaha.IsJson; }
                     if (!yahaha.DefaultValue.IsNullOrEmpty()) { column.DefaultValue = yahaha.DefaultValue; }
-                    if (yahaha.RelationalType == RelationalType.ManyToOne) { 
+                    if (yahaha.RelationalType == RelationalType.ManyToOne)
+                    {
                         column.DataType = "int8";
                         column.IsOnlyIgnoreInsert = true;
                         column.IsOnlyIgnoreUpdate = true;
@@ -296,7 +304,7 @@ public static class SqlSugarSetup
             dbProvider.DbMaintenance.CreateDatabase();
 
         // 获取所有实体表-初始化表结构
-        var entityTypes = App.EffectiveTypes.Where(u => !u.IsInterface && !u.IsAbstract && u.IsClass && (u.IsDefined(typeof(SugarTable), false) || u.IsDefined(typeof(YhhTableAttribute), false))).ToList();
+        var entityTypes = App.EffectiveTypes.Where(u => !u.IsInterface && !u.IsAbstract && u.IsClass && (u.IsDefined(typeof(SugarTable), false) || u.IsDefined(typeof(YhhTable), false))).ToList();
         if (!entityTypes.Any()) return;
         var duplicateTypeNames = entityTypes.GroupBy(type => type.Name)
                                              .Where(group => group.Count() > 1)
@@ -304,7 +312,7 @@ public static class SqlSugarSetup
         if (duplicateTypeNames.Any())
         {
             string duplicateNamesString = string.Join(", ", duplicateTypeNames);
-            throw new Exception($"System contains duplicate type names[{duplicateNamesString}]." );
+            throw new Exception($"System contains duplicate type names[{duplicateNamesString}].");
         }
         foreach (var entityType in entityTypes)
         {

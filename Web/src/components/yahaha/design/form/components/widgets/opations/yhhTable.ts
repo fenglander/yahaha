@@ -5,7 +5,7 @@ export const fieldType = ['OneToMany']
 export const options = [{
   path: 'child',
   label: '字段',
-  type: 'selectField',
+  widget: 'selectField',
   dict: [],
   dictPath: 'SubFields',
 }

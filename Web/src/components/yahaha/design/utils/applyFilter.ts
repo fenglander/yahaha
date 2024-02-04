@@ -62,7 +62,7 @@ function evaluateNestedConditions(data: Data, conditions: Condition[], logicalOp
 
 
 
-export function applyFilter(data: Data, filter: Condition | Condition[]): boolean {
+export function applyFilter(data: Data, filter: Condition | Condition[] | boolean): boolean {
     if (Array.isArray(filter)) {
         let andConditions: Condition[] = [];
         let orConditions: Condition[] = [];
@@ -81,9 +81,10 @@ export function applyFilter(data: Data, filter: Condition | Condition[]): boolea
                 currentLogicalOperator = 'and';
             }
         }
-
         // Evaluate 'and' conditions first, then check 'or' conditions
         return evaluateNestedConditions(data, andConditions, 'and') || evaluateNestedConditions(data, orConditions, 'or');
+    } else if (typeof filter === 'boolean') {
+        return filter
     } else {
         return evaluateCondition(data, filter);
     }

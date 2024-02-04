@@ -13,7 +13,7 @@
 				<el-scrollbar>
 					<div class="main-form" v-loading="state.loading">
 						<div class="empty-tips" v-if="state.formData.list.length === 0">从左侧拖拽来添加字段</div>
-						<form-renderer :type="5" :formData="state.formData" :dict="state.formDict" />
+						<form-renderer ref="rendererRef" :type="5" :formData="state.formData" :dict="state.formDict" />
 					</div>
 				</el-scrollbar>
 			</div>
@@ -57,7 +57,9 @@ import { useDesignFormStore } from '/@/stores/designForm'
 import { saveVisualDev, delVisualDev } from '/@/api/visualDev';
 import { ElMessage } from 'element-plus'
 import { useRoute } from 'vue-router'
-import { afterResponse, beforeRequest, onChange } from '/@/components/yahaha/design/utils/'
+import { baseAttrItem } from '/@/components/yahaha/design/form/components/controlBaseAttr'
+import { getFieldData } from '/@/components/yahaha/design/utils/applyFilter'
+import { afterResponse, beforeRequest, onChange, keepOnlyId, readWidgetOptions } from '/@/components/yahaha/design/utils/'
 import {
 	json2string,
 	objToStringify,
@@ -80,7 +82,7 @@ const showDrawer = ref(false);
 const layoutStore = useLayoutStore()
 layoutStore.changeBreadcrumb([{ label: '系统工具' }, { label: '表单设计' }])
 const store = useDesignFormStore()
-
+const rendererRef = ref();
 const route: any = useRoute().query || {}
 const state = reactive({
 	formData: {
@@ -109,7 +111,9 @@ const state = reactive({
 	} as FormData,
 	previewVisible: false, // 预览窗口
 	designType: route.type, // 当前页面设计类型，有效值search
-	formDict: {},//表单字典
+	formDict: {} as any,//字典，目前没用
+	CreateUser: {} as any,//创建用户
+	CreateTime: undefined as any,//创建事件
 	formOtherData: {
 
 	},
@@ -132,9 +136,10 @@ provide('formDesignType', state.designType)
 const headToolClick = (type: string) => {
 	switch (type) {
 		case 'Refresh':
-			state.formData.list = []
+			state.formData.list = [];
 			store.setActiveKey('')
 			store.setControlAttr({})
+			rendererRef.value.refresh();
 			break
 		case 'View':
 			// 打开预览窗口
@@ -154,7 +159,7 @@ const headToolClick = (type: string) => {
 			state.formDataPreview = stringToObj(stringPreview)
 			state.formDataPreview.form.name = `Preview${formName}` // 修改下表单名
 			break
-		case 'json':
+		case 'Tickets':
 			// 生成脚本预览
 			openAceEditDrawer({
 				direction: 'rtl',
@@ -221,6 +226,10 @@ const dialogConfirm = (editVal: string) => {
 // 将数据保存在服务端
 const saveData = async () => {
 	state.formData = store.formDesginData;
+	state.formData.list = state.formData.list.map((it: FormList) => {
+		return filterObjectByPaths(it);
+	})
+	console.log(state.formData.list)
 	let params: any = {
 		FormData: objToStringify(state.formData),
 		fullName: state.formData.form.fullName, // 表单名称，用于在显示所有已创建的表单列表里显示
@@ -229,7 +238,9 @@ const saveData = async () => {
 		sysModel: state.formData.form.sysModel,
 		type: 4, // 1表单 2列表
 		formDict: json2string(state.formDict),
-		id: state.formData.form.resId,
+		Id: state.formData.form.resId,
+		CreateUser: state.CreateUser && Object.keys(state.CreateUser).length === 0 && state.CreateUser.constructor === Object ? null : state.CreateUser,
+		CreateTime: state.CreateTime,
 	}
 	state.loading = true;
 	await saveVisualDev(params).then((res: any) => {
@@ -240,6 +251,46 @@ const saveData = async () => {
 	await useVisualDev().setVisualDevList();
 	state.loading = false;
 	showDrawer.value = false;
+};
+
+/**只保留有效的设置属性 */
+const filterObjectByPaths = (obj: any) => {
+	const pathList: string[] = baseAttrItem.map(item => item.path);
+	const widgetOptions = readWidgetOptions();
+	const curWidgetOptions = widgetOptions.find((item: { name: any; }) => item.name === obj.curWidget);
+	if (curWidgetOptions) {
+		curWidgetOptions.options.forEach((item: any) => {
+			if (item.path) {
+				pathList.push(item.path);
+			}
+			if (item.key) {
+				pathList.push('key' + item.path);
+			}
+		})
+	} else {
+		console.log(obj);
+		throw new Error('未匹配到有效组件');
+	}
+
+	const filteredObject: any = {};
+
+	pathList.forEach(path => {
+		const value = getFieldData(obj,path);
+		if (value) {
+            filteredObject[path] = value;
+        }
+	});
+	// 如果存在 list 属性，则递归调用 filterObjectByPaths 函数进行额外过滤
+    if (obj.list) {
+        filteredObject.list = obj.list.map((item: any) => filterObjectByPaths(item));
+    }
+
+    // 如果存在 child 属性，则递归调用 filterObjectByPaths 函数进行额外过滤
+    if (obj.child) {
+        filteredObject.child = obj.child.map((item: any) => filterObjectByPaths(item));
+    }
+
+	return filteredObject;
 };
 
 const delData = async () => {
@@ -260,11 +311,13 @@ const getInitData = () => {
 		state.loading = true;
 		const result = useVisualDev().getVisualDev(id);
 		if (result) {
-			const formData = stringToObj(result.formData);
+			const formData = stringToObj(result.FormData);
 			state.formData = formData;
-			state.formDict = string2json(result.formDict);
+			state.formDict = string2json(result.FormDict);
 			state.formData.form.resId = id;
-			store.setFormDesginData(formData);
+			state.CreateUser = result.CreateUser,
+				state.CreateTime = result.CreateTime,
+				store.setFormDesginData(formData);
 		}
 		state.loading = false;
 	} else {
@@ -371,6 +424,7 @@ const confirmationModel = () => {
 	state.formData.form.modelId = state.formData.form.sysModel.Id;
 	state.formData.form.modelName = state.formData.form.sysModel.Name;
 	state.formData.form.fullName = state.formData.form.sysModel.Description;
+	state.formData.form.sysModel = keepOnlyId(state.formData.form.sysModel)
 	showSelectModel.value = false;
 };
 // 选择模板

@@ -22,7 +22,7 @@ public class UserFilterScheme : EntityBase
     public long? ModelId { get; set; }
 
     [YhhColumn(ColumnDescription = "模型",RelationalType = RelationalType.ManyToOne)]
-    public SysModels SysModel { get; set; } //不能赋值只能是null
+    public SysModel SysModel { get; set; } //不能赋值只能是null
 
     [SugarColumn(ColumnDescription = "默认查询字段")]
     public string? DefaultFields { get; set; }

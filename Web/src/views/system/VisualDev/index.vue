@@ -1,7 +1,7 @@
 <template>
   <div style="width: 100%;height: 100%;">
     <!-- 使用 MyTable 组件 -->
-    <yList model="VisualDev" :formComp="formDes" :create="true" :edit="true" :del="true">
+    <yList modelName="VisualDev" :formComp="formDes">
     </yList>
   </div>
 </template>

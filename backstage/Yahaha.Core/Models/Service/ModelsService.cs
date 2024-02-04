@@ -7,17 +7,8 @@
 // 软件按“原样”提供，不提供任何形式的明示或暗示的保证，包括但不限于对适销性、适用性和非侵权的保证。
 // 在任何情况下，作者或版权持有人均不对任何索赔、损害或其他责任负责，无论是因合同、侵权或其他方式引起的，与软件或其使用或其他交易有关。
 
-using Elasticsearch.Net;
-using FluentEmail.Core;
-using Nest;
-using NetTaste;
 using Newtonsoft.Json.Linq;
-using OfficeOpenXml.FormulaParsing.Excel.Functions.Text;
-using RazorEngine.Compilation.ImpromptuInterface.InvokeExt;
-using System.Collections.Generic;
-using System.DirectoryServices.ActiveDirectory;
 using System.Dynamic;
-using System.Reflection;
 using Yahaha.Core.Models;
 using Yahaha.Core.Models.Dto;
 using Yahaha.Core.Models.Entity;
@@ -33,15 +24,15 @@ public class ModelsService : IDynamicApiController, ITransient
 {
     private readonly IdentityService _identitySvc;
     private readonly UserManager _userManager;
-    private readonly SqlSugarRepository<SysModels> _sysModels;
-    private readonly SqlSugarRepository<SysField> _sysFields;
+    private readonly SqlSugarRepository<SysModel> _sysModel;
+    private readonly SqlSugarRepository<SysField> _sysField;
     private readonly ISqlSugarClient _db;
     private static readonly ICache _cache = Cache.Default;
     private readonly IHttpContextAccessor _context;
     private DataElement _de;
 
-    public ModelsService(SqlSugarRepository<SysModels> sysModels,
-        SqlSugarRepository<SysField> sysFields,
+    public ModelsService(SqlSugarRepository<SysModel> sysModel,
+        SqlSugarRepository<SysField> sysField,
         IdentityService identityService,
         UserManager userManager,
         IHttpContextAccessor context,
@@ -49,13 +40,12 @@ public class ModelsService : IDynamicApiController, ITransient
     {
         _identitySvc = identityService;
         _userManager = userManager;
-        _sysModels = sysModels;
-        _sysFields = sysFields;
+        _sysModel = sysModel;
+        _sysField = sysField;
         _db = db;
         _context = context ?? throw new ArgumentNullException(nameof(context));
         _de = new DataElement(_db);
     }
-
 
     /// <summary>
     /// 获取模型动作信息
@@ -83,7 +73,7 @@ public class ModelsService : IDynamicApiController, ITransient
     /// 获取模型列表
     /// </summary>
     /// <param name="name"></param>
-    /// <returns></returns> 
+    /// <returns></returns>
     [DisplayName("获取模型列表")]
     public List<dynamic> GetModelList([FromQuery] string? name)
     {
@@ -91,12 +81,12 @@ public class ModelsService : IDynamicApiController, ITransient
         List<ExpandoObject> ObjectRes = new List<ExpandoObject>();
         if (!_cache.TryGetValue(cacheKey, out ObjectRes))
         {
-            var query = _de.Search("SysModels");
+            var query = _de.Search("SysModel");
 
             var Row = query.OrderBy("\"Description\"").ToList();
             DrillDownDataDto DrillDownParams = new DrillDownDataDto
             {
-                model = "SysModels",
+                model = "SysModel",
                 items = Row,
                 maxLevel = 2,
             };
@@ -137,17 +127,7 @@ public class ModelsService : IDynamicApiController, ITransient
         }
         List<dynamic> Res = ObjectRes.Select(expando => (dynamic)expando).ToList();
         return Res;
-
     }
-
-
-    [DisplayName("获取模型信息")]
-    [HttpGet]
-    public async Task<SysModels> getModelInfo(string model)
-    {
-        return await _sysModels.GetFirstAsync(it => it.TableName == model);
-    }
-
 
     /// <summary>
     /// 获取用户筛选字段信息
@@ -156,9 +136,8 @@ public class ModelsService : IDynamicApiController, ITransient
     /// <returns></returns>
     public List<dynamic> GetUserFilterSchemes(long model)
     {
-
         var query = _de.Search("UserFilterScheme")
-            .Where("\"ModelId\" = @ModelId and \"CreateUserId\" = @CreateUserId", new { ModelId = model, CreateUserId = _userManager.UserId })
+            .Where("\"ModelId\" = @ModelId and \"" + nameof(EntityBase.CreateUser) + "\" = @CreateUserId", new { ModelId = model, CreateUserId = _userManager.UserId })
             .ToList();
         return query;
     }
@@ -176,7 +155,6 @@ public class ModelsService : IDynamicApiController, ITransient
         try
         {
             res = await _db.Storageable(input).ExecuteCommandAsync();
-
         }
         catch (Exception ex)
         {
@@ -186,7 +164,6 @@ public class ModelsService : IDynamicApiController, ITransient
         if (res > 0) { return res; } else { throw new Exception("更新失败"); }
     }
 
-
     /// <summary>
     /// 通用列表数据接口
     /// </summary>
@@ -194,9 +171,9 @@ public class ModelsService : IDynamicApiController, ITransient
     /// <returns></returns>
     public async Task<GeneralListRes> GeneralListData(GeneralListDto input)
     {
-        var Model = await _sysModels.GetByIdAsync(input.model);
-        var query = _de.Search(Model.TableName);
-        var Fields = _de.GetSysFields(Model.TableName);
+        var Model = await _sysModel.GetByIdAsync(input.model);
+        var query = _de.Search(Model.Name);
+        var Fields = _de.GetSysFields(Model.Name);
         var FilterSchemes = GetUserFilterSchemes(input.model);
 
         if (input.filters != null)
@@ -221,7 +198,7 @@ public class ModelsService : IDynamicApiController, ITransient
 
         DrillDownDataDto DrillDownParams = new DrillDownDataDto
         {
-            model = Model.TableName,
+            model = Model.Name,
             items = Raw.Items.ToList(),
             ConnectionId = App.HttpContext.Connection.Id,
         };
@@ -243,7 +220,6 @@ public class ModelsService : IDynamicApiController, ITransient
         return res;
     }
 
-
     /// <summary>
     /// 通用表单数据接口
     /// </summary>
@@ -251,12 +227,12 @@ public class ModelsService : IDynamicApiController, ITransient
     /// <returns></returns>
     public async Task<dynamic> GeneralFormData(GeneralFormDto input)
     {
-        var Model = await _sysModels.GetByIdAsync(input.model);
-        if (Model == null || Model.TableName == null)
+        var Model = await _sysModel.GetByIdAsync(input.model);
+        if (Model == null || Model.Name == null)
         {
             throw new Exception("请输入正确表名");
         }
-        var query = _de.Search(Model.TableName);
+        var query = _de.Search(Model.Name);
         var conModels = new List<IConditionalModel>
         {
             new ConditionalModel { FieldName = "\"Id\"", ConditionalType = ConditionalType.Equal, FieldValue = input.id.ToString(), CSharpTypeName="long" }
@@ -267,7 +243,7 @@ public class ModelsService : IDynamicApiController, ITransient
 
         DrillDownDataDto DrillDownParams = new DrillDownDataDto
         {
-            model = Model.TableName,
+            model = Model.Name,
             items = Row,
             maxLevel = 3,
             ConnectionId = App.HttpContext.Connection.Id,
@@ -284,8 +260,8 @@ public class ModelsService : IDynamicApiController, ITransient
     /// <returns></returns>
     public int GeneralDelete(GeneralDeleteDto input)
     {
-        var Model = _sysModels.GetById(input.model);
-        if (Model == null || Model.TableName == null)
+        var Model = _sysModel.GetById(input.model);
+        if (Model == null || Model.Name == null)
         {
             throw new Exception("请输入正确表名");
         }
@@ -294,8 +270,8 @@ public class ModelsService : IDynamicApiController, ITransient
         {
             new ConditionalModel { FieldName = "\"Id\"", ConditionalType = ConditionalType.In, FieldValue = ids }
         };
-        var list = _de.Search(Model.TableName).Where(conModels).ToList();
-        return _de.Delete(Model.TableName, list);
+        var list = _de.Search(Model.Name).Where(conModels).ToList();
+        return _de.Delete(Model.Name, list);
     }
 
     /// <summary>
@@ -305,8 +281,8 @@ public class ModelsService : IDynamicApiController, ITransient
     /// <returns></returns>
     public long GeneralSave(GeneralCreateDto input)
     {
-        var Model = _sysModels.GetById(input.model);
-        if (Model == null || Model.TableName == null)
+        var Model = _sysModel.GetById(input.model);
+        if (Model == null || Model.Name == null)
         {
             throw new Exception("请输入正确表名");
         }
@@ -317,11 +293,11 @@ public class ModelsService : IDynamicApiController, ITransient
         bool hasId = result.ContainsKey("Id") && result["Id"] != null && long.TryParse(result["Id"].ToString(), out long id) && id != 0;
         if (hasId)
         {
-            return _de.Update(Model.TableName, result);
+            return _de.Update(Model.Name, result);
         }
         else
         {
-            return _de.Create(Model.TableName, result);
+            return _de.Create(Model.Name, result);
         }
     }
 
@@ -366,95 +342,11 @@ public class ModelsService : IDynamicApiController, ITransient
         var updatedRec = resProperty?.GetValue(instance);
 
         // 输出结果
-        res.Data = ConvertToDictionaryList(updatedRec);
+        res.Data = _de.ToDictionaryList(updatedRec as Object);
         res.Result = result;
 
         return res;
     }
 
-    public async Task<object> CallActionMethod(string methodName, object[] parameters)
-    {
-        var method = GetType().GetMethods().FirstOrDefault(m => m.Name == methodName);
-        if (method == null)
-        {
-            throw new ArgumentException($"Method {methodName} not found in {GetType().Name}.");
-        }
-        // 获取方法参数类型
-        var parameterTypes = method.GetParameters().Select(p => p.ParameterType).ToArray();
-        // 转换参数
-        var convertedParameters = parameters.Select((param, index) => Convert.ChangeType(param, parameterTypes[index])).ToArray();
-        // 调用方法
-        var result = method.Invoke(this, convertedParameters);
 
-        if (method.ReturnType == typeof(Task))
-        {
-            // 处理异步方法
-            await (Task)result;
-            return null;
-        }
-        else
-        {
-            return result;
-        }
-    }
-
-    static List<Dictionary<string, object>> ConvertToDictionaryList(object obj)
-    {
-        List<Dictionary<string, object>> result = new List<Dictionary<string, object>>();
-
-        if (obj is IEnumerable enumerable && !(obj is string))
-        {
-            // 如果是集合类型，递归处理每个元素
-            foreach (var item in enumerable)
-            {
-                result.Add(ConvertToDictionary(item));
-            }
-        }
-        else
-        {
-            // 如果是单个对象，直接处理
-            result.Add(ConvertToDictionary(obj));
-        }
-
-        return result;
-    }
-
-    static Dictionary<string, object> ConvertToDictionary(object obj)
-    {
-        Dictionary<string, object> dict = new Dictionary<string, object>();
-
-        if (obj != null)
-        {
-            Type type = obj.GetType();
-            PropertyInfo[] properties = type.GetProperties();
-
-            foreach (PropertyInfo property in properties)
-            {
-                object value = property.GetValue(obj);
-
-                if (value != null && !IsPrimitiveType(property.PropertyType))
-                {
-                    // 递归处理非基元数据类型，但如果是List类型，递归转换为List<Dictionary<string, object>>
-                    if (value is IEnumerable && !(value is string))
-                    {
-                        value = ConvertToDictionaryList(value);
-                    }
-                    else
-                    {
-                        value = ConvertToDictionary(value);
-                    }
-                }
-
-                dict.Add(property.Name, value);
-            }
-        }
-
-        return dict;
-    }
-
-
-    static bool IsPrimitiveType(Type type)
-    {
-        return type.IsPrimitive || type.IsValueType || type == typeof(string);
-    }
 }

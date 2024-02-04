@@ -34,6 +34,14 @@ public class YhhColumn : Attribute
     public int DecimalDigits { set; get; }
     /// <summary>
     /// 是否可以为null默为false
+    /// <para>最终会考虑实体的类型设置，如果类型不带? 则最终判断为true
+    /// 举例:</para> 
+    /// <para>实体类型:int? NotNull值:true 则最终NotNull判断为true</para> 
+    /// <para>实体类型:long NotNull值:false 则最终NotNull判断为true</para> 
+    /// <para>string不考虑实体类型设置，因C#中string始终允许null
+    /// 举例:</para> 
+    /// <para>实体类型:string NotNull值:false 则最终NotNull判断为false</para> 
+    /// <para>实体类型:string? NotNull值:true 则最终NotNull判断为true</para> 
     /// </summary>
     public bool NotNull { set; get; }
     /// <summary>
@@ -58,10 +66,6 @@ public class YhhColumn : Attribute
     /// cascade 删除关联记录后，当前记录也会被删除。
     /// </summary>
     public OnDelete OnDelete { get; set; }
-    /// <summary>
-    /// 强制必填
-    /// </summary>
-    public bool ForceRequired { get; set; } = false;
 }
 
 public enum RelationalType

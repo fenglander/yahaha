@@ -40,7 +40,7 @@
         <el-checkbox v-model="scope.row.sel" size="small" @change="handleSelect(scope.row.sel, $event)" />
       </template>
     </el-table-column>
-    <el-table-column prop="label" label="字段" />
+    <el-table-column prop="opationLabel" label="字段" />
   </el-table>
 </template>
   
@@ -68,7 +68,8 @@ const setFieldList = (() => {
   dict.forEach((item: any) => {
     const filteredItems = value.filter((item2: any) => item.fieldName === item2.fieldName);
     item.sel = filteredItems.length > 0;
-    item.label = item.Description + '[' + item.fieldName + ']';
+    item.label = item.Description;
+    item.opationLabel = item.Description + '[' + item.fieldName + ']';
     item.type = filteredItems.length > 0 ? filteredItems[0].type : item.type;
     item.width = filteredItems.length > 0 ? filteredItems[0].width : 0;
     item.minWdith = filteredItems.length > 0 ? filteredItems[0].minWdith : 0;

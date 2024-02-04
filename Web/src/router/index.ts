@@ -11,7 +11,7 @@ import { staticRoutes, notFoundAndNoPower } from '/@/router/route';
 import { initFrontEndControlRoutes } from '/@/router/frontEnd';
 import { initBackEndControlRoutes } from '/@/router/backEnd';
 import { useVisualDev } from '/@/stores/visualDev';
-const visualDevStores = useVisualDev(pinia);
+import { useSysModel } from '/@/stores/sysModel';
 
 /**
  * 1、前端控制路由时：isRequestRoutes 为 false，需要写 roles，需要走 setFilterRoute 方法。
@@ -82,6 +82,9 @@ export function formatTwoStageRoutes(arr: any) {
 				v.meta['isDynamicPath'] = v.path;
 			}
 			// 如果是表单设计，则把应用表单设计ID作为参数
+			if (v.modelId) {
+				v.query = { ...v.query, modelId: v.modelId };
+			}
 			if (v.visualDevId) {
 				v.query = { ...v.query, visualDevId: v.visualDevId };
 			}
@@ -117,7 +120,7 @@ router.beforeEach(async (to, from, next) => {
 		} else {
 			const storesRoutesList = useRoutesList(pinia);
 			const { routesList } = storeToRefs(storesRoutesList);
-			
+
 			to = dgeneralViewFormRouting(to);
 
 			if (routesList.value.length === 0) {
@@ -145,12 +148,17 @@ router.beforeEach(async (to, from, next) => {
  * @returns 加工后的目的路由
  */
 function dgeneralViewFormRouting(to: any) {
-	if (to.query.visualDev && to.path.indexOf('generalView/form') > -1) {
-		const VisualDev = visualDevStores.getVisualDev(to.query.visualDev)
+	if (to.path.indexOf('generalView/form') > -1) {
+		const VisualDev = useVisualDev().getVisualDev(to.query.visualDev)
+		const title = ' | 详情';
 		if (VisualDev) {
 			// 没有传id为新增
-			const title = ' | 详情';
-			to.meta.title = VisualDev.fullName + title;
+			to.meta.title = VisualDev.FullName + title;
+		} else {
+			const model = useSysModel().getSysModelsById(to.query.model)
+			if (model) {
+				to.meta.title = model.Description + title;
+			}
 		}
 	}
 	return to

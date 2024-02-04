@@ -5,7 +5,7 @@
   }" @add="draggableAdd">
     <template #item="{ element, index }">
         <div :class="getGroupClass(element)" :style="getFormItemStyle(element)" @click.stop="groupClick(element)"
-          v-show="linksShow(element, index)">
+          >
           <template v-if="element.type === 'tabs'">
             <div class="form-tabs">
               <el-tabs v-bind="element.control" :class="[element.config?.className]">
@@ -340,25 +340,7 @@ const getFormItemStyle = (ele: FormList) => {
   }
   return res
 }
-// 根据关联条件显示隐藏当前项
-const linksShow = (el: FormList, index: number) => {
-  // 当前项设置了关联条件，当关联主体的值等于当前组件设定的值时
-  const key = el.config.linkKey
-  const value = el.config.linkValue
-  const linkResult = el.config.linkResult
-  if (key && value && type.value !== 5) {
-    const Fn = new Function('$', `return (${value})`)
-    const pass = Fn(formProps.value.model)
-    if (linkResult === 'disabled') {
-      // 设置为disabled后返回显示状态
-      dataList.value[index].control.disabled = pass
-      return true
-    } else {
-      return pass
-    }
-  }
-  return true
-}
+
 
 
 //按钮点击事件

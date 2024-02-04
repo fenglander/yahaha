@@ -137,7 +137,7 @@ export const jsonParseStringify = (val: any) => {
  * @data 待处理数据
  * @relateFieldList 关联列表
 */
-export const TrigRelateFieldVals = (data:any,relateFieldList:any,key: string) => {
+export const TrigRelateFieldVals = (data: any, relateFieldList: any, key: string) => {
   const relate = relateFieldList.value.filter((item: any) => { return item.relatedKey === key });
   if (relate.length > 0) {
     relate.forEach((it: any) => {
@@ -218,6 +218,20 @@ export function deepClone(obj: any, cache: WeakMap<object, any> = new WeakMap())
   return cloneObj;
 }
 
+export function keepOnlyId(obj: any) {
+  // 检查是否为对象
+  if (typeof obj !== 'object' || obj === null || obj === undefined) {
+    return obj;
+  }
+
+  // 检查是否具有 Id 属性
+  if (!('Id' in obj)) {
+    return obj;
+  }
+
+  return { Id: formatNumber(obj.Id) };
+}
+
 
 import type { widgetConfig } from '../types'
 
@@ -238,6 +252,14 @@ export const readWidgetOptions = () => {
   })
   return temp;
 }
+
+// 判断并添加属性
+export const addKeyIfNotExists = (obj: any, key: string, val?:any) => {
+  if (!(key in obj)) {
+    obj[key] = val || null;
+  }
+}
+
 
 // 将字符类数字转为数值类
 export const formatNumber = (val: any) => {

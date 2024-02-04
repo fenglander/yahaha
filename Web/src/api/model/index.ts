@@ -7,7 +7,6 @@ enum Api {
 	generalExecFunc = '/api/models/generalExecFunc',
 	getFieldList = '/api/models/FieldList',
 	getModelList = '/api/models/modelList',
-	getModelInfo = '/api/models/modelInfo',
 	getActionList = '/api/models/actionList',
 	sourceListByFormDesign = '/api/models/sourceListByFormDesign',
 	createUserFilterSchemes = '/api/models/createUserFilterSchemes',
@@ -53,12 +52,6 @@ export const createUserFilterSchemes = (params?: any) =>
 		url: Api.createUserFilterSchemes,
 		method: 'post',
 		data: params,
-	});
-/// 获取模型信息
-export const getModelInfo = (params?: any) =>
-	request({
-		url: `${Api.getModelInfo}/${params}`,
-		method: 'get',
 	});
 
 // 通用表单数据

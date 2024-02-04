@@ -1,7 +1,6 @@
-﻿
+﻿namespace Yahaha.Core.Models.Entity;
 
-namespace Yahaha.Core.Models.Entity;
-[YhhTable("方法档案")]
+[YhhTable("模型函数")]
 public class SysAction : EntityBase
 {
     [YhhColumn(ColumnDescription = "方法类名")]
@@ -14,7 +13,7 @@ public class SysAction : EntityBase
     public string ActionModuleName { get; set; }
 
     [YhhColumn(ColumnDescription = "绑定模型", RelationalType = RelationalType.ManyToOne)]
-    public SysModels BindingModel { get; set; }
+    public SysModel BindingModel { get; set; }
 
     [YhhColumn(ColumnDescription = "是否函数")]
     public bool? Function { get; set; }
@@ -23,7 +22,7 @@ public class SysAction : EntityBase
     public bool? Trigger { get; set; }
 
     [YhhColumn(ColumnDescription = "关系模型", RelationalType = RelationalType.ManyToOne)]
-    public SysModels? TriggerModel { get; set; }
+    public SysModel? TriggerModel { get; set; }
 
     [YhhColumn(ColumnDescription = "关系字段", RelationalType = RelationalType.ManyToOne)]
     public SysField? TriggerField { get; set; }

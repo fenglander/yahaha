@@ -83,6 +83,10 @@ public class MenuOutput
     /// 应用
     /// </summary>
     public long? VisualDevId { get; set; }
+    /// <summary>
+    /// 系统模型Id
+    /// </summary>
+    public long? ModelId { get; set; }
 }
 
 /// <summary>

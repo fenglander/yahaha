@@ -24,7 +24,7 @@ import Draggable from 'vuedraggable-es'
 import { computed, ref, watch, inject } from 'vue'
 import { FormData, FormList } from '../../types'
 import UseTemplate from './template.vue'
-import { deepClone, readWidgetOptions, stringToObj } from '../../utils'
+import { deepClone, stringToObj, keepOnlyId } from '../../utils'
 import { useSysModel } from '/@/stores/sysModel';
 import { useVisualDev } from '/@/stores/visualDev';
 const props = defineProps({
@@ -93,7 +93,6 @@ watch(() => props.modelId, (val) => {
   }
 });
 
-
 // 加载当前列表所属的表单，从表单中提取可用于搜索的字段
 const getFormField = (formId: Number) => {
   var res = useVisualDev().getVisualDev(formId);
@@ -103,36 +102,21 @@ const getFormField = (formId: Number) => {
   }
 };
 
-
-
-
 const initField = (vals: any) => {
-  const widget = readWidgetOptions()
-  const filteredItem: any = widget.find(item => {
-    if (item.fieldType.includes('*')) {
-      return true
-    }
-    else {
-      return item.fieldType.includes(vals.tType)
-    }
-  });
-  vals.type = filteredItem?.name ?? ''
+  vals.RelModel = keepOnlyId(vals.RelModel) // 暂时没用，缩减json内容
+  vals.SysModel = keepOnlyId(vals.SysModel) // 暂时没用，缩减json内容
+  vals.SubFields = vals.tType !== 'OneToMany' ? null : vals.SubFields // 暂时没用，缩减json内容
+  // vals.type = filteredItem?.name ?? ''
   vals.label = vals.Description
   vals.fieldName = vals.Name
   vals.name = vals.Name
   vals.key = null
+  vals.hideLable = false
   vals.control = { modelValue: '' }
   vals.config = {}
   vals.child = []
-  filteredItem?.options.forEach((item: any) => {
-    if (!(item.key in vals.config)) {
-      // 默认
-      if (item.default) {
-        item.value = item.default;
-        vals.config[item.key] = item.default;
-      }
-    }
-  })
+  vals.curWidget = '';
+  vals.widget = '';
   return vals;
 }
 

@@ -1,7 +1,7 @@
 <!-- Created by 337547038 on 2021/9/29. -->
 <template>
   <el-table v-bind="config.control" :data="childData" @row-click="rowclickEvent">
-    <el-table-column template v-for="item in config.child" :prop="item.name" :key="item.Id" :width="item.width"
+    <el-table-column template v-for="item in config.child" :prop="item.Name" :key="item.Id" :width="item.width"
       :minWidth="item.minWidth" :fixed="emptyToNull(item.fixed)" :sortable="item.sortable" align="center"
       header-align="center">
       <template #header>
@@ -10,10 +10,8 @@
         </el-tooltip>
       </template>
       <template #default="scope">
-        <component :is="curWidget(item.type)" :widgetConfig="setCurrStatus(item, scope, scope.$index === editIndex)"
-          v-model="scope.row[item.name]" @blur="blurEvent" />
-        <!-- <form-item :data="item" :tProp="`${widgetConfig.name}.${scope.$index}.${item.name}`" :editIndex="editIndex"
-          v-model="scope.row[item.name]" @blur="blurEvent" /> -->
+        <component :is="curWidget(item.curWidget)" @blur="blurEvent" :widgetConfig="setCurrStatus(item, scope)" v-model="scope.row[item.Name]"
+           />
       </template>
     </el-table-column>
     <el-table-column v-if="!readonly" prop="action" label="操作" fixed="right">
@@ -33,6 +31,7 @@ import { inject, computed, ref, watch, } from 'vue'
 import { emptyToNull, isEmptyRoNull, constFormProps, deepClone } from '../../../utils'
 import { debounce } from 'lodash-es';
 import { useDesignFormStore } from '/@/stores/designForm'
+import { useSysModel } from '/@/stores/sysModel';
 import md5 from 'md5'
 import { FormList } from '../../../types'
 const props = withDefaults(
@@ -49,7 +48,9 @@ const emits = defineEmits<{
   (e: 'blur', val: any): void // 表单组件值发生变化时
 }>()
 
-const blurEvent = (event: any) => {
+const blurEvent = (item: any, event: any) => {
+  // console.log('item',item,'event',event)
+  TrigRelateFieldVals()
   emits('blur', event);
 }
 
@@ -96,8 +97,9 @@ const readonly = computed(() => {
 })
 
 
-const setCurrStatus = (item: any, scope: any, isCur: boolean) => {
+const setCurrStatus = (item: any, scope: any) => {
   let temp = item;
+  const isCur = scope.$index === editIndex.value;
   if (modeType.value !== 5) {
     temp = deepClone(item);
   }
@@ -105,16 +107,16 @@ const setCurrStatus = (item: any, scope: any, isCur: boolean) => {
     temp.readonly = true; // 查看模式，为不可编辑状态
   } else if ([1, 2].includes(modeType.value) && (readonly.value || item.origReadonly)) {
     temp.readonly = true; // 编辑模式但只读
-  } else if (isCur) {// 是否当前行
+  } else if (isCur || modeType.value === 5) {// 是否当前行
     temp.readonly = false;
   } else {
     temp.readonly = true;
   }
   const value = scope.row[temp.Name];
   temp.validateReq = item.origRequired && !value;
-  if(isCur){
-    console.log(temp)
-  }
+  // if(isCur){
+  //   console.log(temp)
+  // }
   return temp
 }
 
@@ -126,13 +128,10 @@ const getGroupName = (item: any) => {
   }
 }
 
-const groupClick = (item: any, ele?: string) => {
+const groupClick = (item: any) => {
   // 设计模式下才执行
   if (modeType.value !== 5) {
     return
-  }
-  if (ele) {
-    item.type = ele
   }
   // 更新字段
 
@@ -140,12 +139,32 @@ const groupClick = (item: any, ele?: string) => {
   store.setControlAttr(item)
 }
 
+const TrigRelateFieldVals = () => {
+  const relateFieldList = useSysModel().getRelateFieldList(config.value.RelModel.Id);
+  const rowData = childData.value[editIndex.value];
+  if (relateFieldList.length > 0) {
+    relateFieldList.forEach((it: any) => {
+      let relValue = rowData;
+      for (const prop of it.Related.split('.')) {
+        if (relValue && relValue.hasOwnProperty(prop)) {
+          relValue = relValue[prop];
+        } else {
+          // 属性不存在时可以选择处理错误或提供默认值
+          relValue = null;
+          break;
+        }
+      }
+      rowData[it.Name] = relValue;
+    });
+  }
+}
+
 const getEmptyData = () => {
   let data: any[] = [];
   const result: { [key: string]: null } = {};
   if (config.value.SubFields) {
     config.value.SubFields.forEach((item: any) => {
-      result[item.name] = null;
+      result[item.Name] = null;
     });
   }
   data.push(result);
@@ -160,8 +179,8 @@ const addRow = () => {
   if (config.value.child.length > 0) {
     const temp: any = {}
     config.value.child.forEach((item: any) => {
-      if (item.name) {
-        temp[item.name] = item.control.modelValue
+      if (item.Name) {
+        temp[item.Name] = item.control.modelValue
       }
     })
 
@@ -173,7 +192,7 @@ const getDynamicClass = (item: FormList) => {
   // 在这里根据条件动态返回class
   return {
     'design-lable': modeType.value === 5,
-    'required-lable': item.origRequired,
+    'required-lable': [1, 2].includes(modeType.value) && item.origRequired,
   };
 }
 

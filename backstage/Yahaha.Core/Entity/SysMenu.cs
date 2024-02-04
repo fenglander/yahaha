@@ -31,9 +31,14 @@ public class SysMenu : EntityBase
     /// <summary>
     /// 应用
     /// </summary>
-    [SugarColumn(ColumnDescription = "应用")]
+    [SugarColumn(ColumnDescription = "应用设计")]
     public long? VisualDevId { get; set; }
 
+    /// <summary>
+    /// 系统模型
+    /// </summary>
+    [YhhColumn(ColumnDescription = "系统模型")]
+    public long? ModelId { get; set; }
     /// <summary>
     /// 路由名称
     /// </summary>
@@ -136,6 +141,6 @@ public class SysMenu : EntityBase
     /// <summary>
     /// 菜单子项
     /// </summary>
-    [SugarColumn(IsIgnore = true)]
+    [YhhColumn(IsIgnore = true)]
     public List<SysMenu> Children { get; set; } = new List<SysMenu>();
 }

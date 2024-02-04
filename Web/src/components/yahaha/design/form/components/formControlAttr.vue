@@ -21,7 +21,7 @@
 
                 <el-input-number v-else-if="item.type === 'number'" v-model="item.value" :placeholder="item.placeholder"
                   @input="controlChange(item, $event)" :readonly="item.readonly" />
-                <component v-else :is="curWidget(item.type)" v-model="item.value" :dict="item.dict"
+                <component v-else :is="curWidget(item.widget)" v-model="item.value" :dict="item.dict"
                   @change="controlChange(item, $event)"></component>
               </el-form-item>
             </template>
@@ -197,7 +197,7 @@ const widgetList = computed(() => {
 
 /**加载所选择的组件配置项 */
 const widgetAttrList = computed(() => {
-  const result = widgetOptions.value.find((item: { name: any; }) => item.name === controlData.value.type);
+  const result = widgetOptions.value.find((item: { name: any; }) => item.name === controlData.value.widget);
   result?.options.forEach((item: any) => {
     // 获取dict
     if (item.dictPath) {
@@ -271,7 +271,7 @@ const baseAttr = computed(() => {
       temp.push({
         ...it,
         value: getFieldData(controlData.value, it.path) || null, // 设定值
-        dict: it.path === 'type' ? widgetList.value : null // 设置小部件选项
+        dict: it.path === 'widget' ? widgetList.value : null // 设置小部件选项
       })
     }
   })
@@ -347,7 +347,7 @@ const controlChange = (obj: any, val: any) => {
 }
 
 const getIsLayout = () => {
-  const result = widgetOptions.value.find((item: { name: any; }) => item.name === controlData.value.type);
+  const result = widgetOptions.value.find((item: { name: any; }) => item.name === controlData.value.curWidget);
   controlData.value.isLayout = result?.isLayout ?? false;
 }
 
@@ -410,10 +410,10 @@ const delSelectOption = (index: number, type?: string) => {
 }
 // 多选固定选项增加
 const addSelectOption = (type: string) => {
-  if (controlData.value.type === 'cascader') {
+  if (controlData.value.widget === 'cascader') {
     // 级联时打开弹窗口
     openAttrDialog('cascader')
-  } else if (controlData.value.type === 'treeSelect') {
+  } else if (controlData.value.widget === 'treeSelect') {
     openAttrDialog('treeSelect', '编辑组件下拉选项数据')
   } else {
     if (type === 'tabs') {
@@ -432,7 +432,7 @@ const addSelectOption = (type: string) => {
 // 更多属性弹窗
 const openAttrDialog = (type?: string, tooltip?: string) => {
   let editData = controlData.value.control
-  if (controlData.value.type === 'button') {
+  if (controlData.value.widget === 'button') {
     // 按钮组件编辑属性
     editData = controlData.value.config
     type = 'button'
@@ -492,7 +492,7 @@ const showHide = (type: string[], show?: boolean) => {
   ) {
     return false
   }
-  const index = type.indexOf(controlData.value.type)
+  const index = type.indexOf(controlData.value.widget)
   return show ? index !== -1 : index === -1
 }
 

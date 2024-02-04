@@ -36,31 +36,19 @@ public abstract class EntityBase : EntityBaseId
     /// 更新时间
     /// </summary>
     [SugarColumn(ColumnDescription = "更新时间", IsOnlyIgnoreInsert = true)]
-    public virtual DateTime? UpdateTime { get; set; }
-
-    /// <summary>
-    /// 创建者Id
-    /// </summary>
-    [SugarColumn(ColumnDescription = "创建者Id", IsOnlyIgnoreUpdate = true)]
-    public virtual long? CreateUserId { get; set; }
+    public DateTime? UpdateTime { get; set; }
 
     /// <summary>
     /// 创建者
     /// </summary>
-    [YhhColumn(ColumnDescription = "创建者",RelationalType = RelationalType.ManyToOne)]
-    public SysUser CreateUser { get; set; }
+    [YhhColumn(ColumnDescription = "创建者", RelationalType = RelationalType.ManyToOne)]
+    public SysUser? CreateUser { get; set; }
 
     /// <summary>
     /// 修改者
     /// </summary>
     [YhhColumn(ColumnDescription = "修改者", RelationalType = RelationalType.ManyToOne)]
-    public SysUser UpdateUser { get; set; }
-
-    /// <summary>
-    /// 软删除
-    /// </summary>
-    [SugarColumn(ColumnDescription = "软删除")]
-    public virtual bool IsDelete { get; set; } = false;
+    public SysUser? UpdateUser { get; set; }
 }
 
 /// <summary>

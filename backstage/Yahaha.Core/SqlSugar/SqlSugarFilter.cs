@@ -96,7 +96,7 @@ public static class SqlSugarFilter
                     continue;
 
                 var lambda = DynamicExpressionParser.ParseLambda(new[] {
-                    Expression.Parameter(entityType, "u") }, typeof(bool), $"u.{nameof(EntityBaseData.CreateUserId)}=@0", userId);
+                    Expression.Parameter(entityType, "u") }, typeof(bool), $"u.{nameof(EntityBaseData.CreateUser)}=@0", userId);
                 db.QueryFilter.AddTableFilter(entityType, lambda);
                 dataScopeFilter.TryAdd(entityType, lambda);
             }

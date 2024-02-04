@@ -5,11 +5,12 @@
     <!-- <el-button link type="primary" @click="btnClick(item.icon)" v-for="item in btnList" :key="item.icon">
       <i :class="['icon-' + item.icon]"></i>{{ item.label }}
     </el-button> -->
-    
 
-      <el-button v-for="item in btnList"  :key="item.key" :icon="'ele-' + item.icon" :type="item.btnType" @click="btnClick(item.icon)">
-        {{ item.label }}
-      </el-button>
+
+    <el-button v-for="item in btnList" :key="item.key" :icon="'ele-' + item.icon" :type="item.btnType"
+      @click="btnClick(item.icon)">
+      {{ item.label }}
+    </el-button>
 
   </div>
 </template>
@@ -39,6 +40,7 @@ const btnList = computed(() => {
   const list = [
     { icon: 'Close', label: '删除', btnType: 'danger', key: 6 },
     { icon: 'Refresh', label: '清空', btnType: '', key: 2 },
+    // { icon: 'Tickets', label: 'json', btnType: '', key: 4 },
     { icon: 'View', label: '预览', btnType: '', key: 3 },
     { icon: 'TopLeft', label: '退出', btnType: 'warning', key: 1 },
     { icon: 'Collection', label: '保存', btnType: 'primary', key: 5 }

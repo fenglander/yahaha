@@ -33,7 +33,7 @@ public class SysWechatUser : EntityBase
     /// 平台类型
     /// </summary>
     [SugarColumn(ColumnDescription = "平台类型")]
-    public PlatformTypeEnum PlatformType { get; set; } = PlatformTypeEnum.微信公众号;
+    public PlatformTypeEnum? PlatformType { get; set; } = PlatformTypeEnum.微信公众号;
 
     /// <summary>
     /// OpenId

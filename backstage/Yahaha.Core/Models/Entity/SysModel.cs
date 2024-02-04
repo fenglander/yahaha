@@ -6,8 +6,8 @@ using System.Threading.Tasks;
 
 namespace Yahaha.Core.Models.Entity;
 [SystemTable]
-[YhhTable("模型", "Name")]
-public class SysModels:EntityBase
+[YhhTable("系统模型", "Name")]
+public class SysModel:EntityBase
 {
     
     [YhhColumn(ColumnDescription = "名称", Display =true)]
@@ -20,7 +20,7 @@ public class SysModels:EntityBase
     public string Name { get; set; }
 
     [YhhColumn(ColumnDescription = "表名")]
-    public string? TableName { get; set; }
+    public string? FullName { get; set; }
 
     [YhhColumn(ColumnDescription = "信息")]
     public string? Info { get; set; }
