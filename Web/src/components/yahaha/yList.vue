@@ -18,7 +18,7 @@
             <el-form-item class="select-primary-filter" label="设置默认条件">
               <el-select multiple collapse-tags @visible-change="setFilterParams" placeholder="请选择"
                 v-model="primaryFields">
-                <el-option v-for="item in fields" :key="item.name" :label="item.description" :value="item.name" />
+                <el-option v-for="item in fields" :key="item.Name" :label="item.Description" :value="item.Name" />
               </el-select>
             </el-form-item>
           </el-collapse-item>
@@ -37,8 +37,8 @@
         </div>
 
         <el-button-group>
-          <el-button type="primary" icon="ele-Search" @click="handleQuery" > 查询 </el-button>
-          <el-button icon="ele-ZoomIn" @click="changeCollapseState" > {{ collapseParam.butName
+          <el-button type="primary" icon="ele-Search" @click="handleQuery"> 查询 </el-button>
+          <el-button icon="ele-ZoomIn" @click="changeCollapseState"> {{ collapseParam.butName
           }} </el-button>
           <el-button icon="ele-Refresh" @click="cleanQueryValue"> 重置 </el-button>
         </el-button-group>
@@ -51,7 +51,7 @@
       @select-all="selectAllAction" @select="selectAction" style="width : 100%; height: 100%;">
       <el-table-column align="center" type="selection" />
       <!-- 根据字段配置渲染表格列 -->
-      <el-table-column v-for="field in fields" :key="field.name" :prop="field.name" :label="field.description">
+      <el-table-column v-for="field in fields" :key="field.Name" :prop="field.Name" :label="field.Description">
         <template v-slot="scope">
           <!-- <el-input v-model.lazy="scope.row.id" /> -->
           <yColumn :field="field" v-model="scope.row" />
@@ -84,8 +84,8 @@
 <script setup lang="ts">
 import { onMounted, ref, nextTick, computed, toRaw } from 'vue';
 import formRenderer from './design/form/components/formRenderer.vue'
-import yColumn from './yColumn.vue';
-import ySearchItem from './search/ySearchItem.vue';
+import yColumn from './design/list/yColumn.vue';
+import ySearchItem from './design/list/search/ySearchItem.vue';
 import * as api from '/@/api/model/';
 import { useSysModel } from '/@/stores/sysModel';
 import { useVisualDev } from '/@/stores/visualDev';
@@ -174,14 +174,14 @@ const getModel = async () => {
     // 根据设计获取
     // console.log('visualDevList',visualDevList)
     // stores.setVisualDevList;
-    const res = useVisualDev().getVisualDev(props.design)
+    const res = useVisualDev().getFormDesgin(props.design)
     designData.value.id = props.design;
     designData.value.formData = stringToObj(res.FormData);
     queryParams.value.model = res.ModelId;
   } else if (props.modelId) {
     const res = useSysModel().getSysModelsById(props.modelId);
     queryParams.value.model = res.Id;
-  }else{
+  } else {
     const res = useSysModel().getSysModels(props.modelName);
     queryParams.value.model = res.Id;
   }
@@ -393,10 +393,15 @@ const fetchData = async () => {
   var res = await api.generalListData(Object.assign(queryParams.value, tableParams.value));
   tableData.value = res.data.result?.items ?? [];
   tableParams.value.total = res.data.result?.total;
-  fields.value = res.data.result?.fields.filter((item: any) => item.description !== null && item.description.trim() !== "" && item.navigatType == null)
+  fields.value = useSysModel().getSysFieldsByModelId(queryParams.value.model).filter((item: any) => item.Description !== null && item.Description.trim() !== "" && item.NavigatType == null)
     .map((item: any) => ({
       ...item as SysFields,
     })) as SysFields[];
+
+  // fields.value = res.data.result?.fields.filter((item: any) => item.description !== null && item.description.trim() !== "" && item.navigatType == null)
+  //   .map((item: any) => ({
+  //     ...item as SysFields,
+  //   })) as SysFields[];
   // 读取默认查询字段
   filterSchemes.value = res.data.result?.userFilterSchemes;
   if (filterSchemes.value.length > 0) {

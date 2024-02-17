@@ -1,11 +1,13 @@
 import request from '/@/utils/request';
 enum Api {
     visualDevById = '/api/visualDev/byId',
-    visualDevList = '/api/visualDev/list',
+    formDesginList = '/api/visualDev/formDesginList',
+    listDesginList = '/api/visualDev/listDesginList',
     fieldsByModel = '/api/visualDev/fieldsByModel',
     modelInfo = '/api/visualDev/modelInfo',
-    saveVisualDev = '/api/visualDev/saveVisualDev',
-    delVisualDev = '/api/visualDev/delVisualDev',
+    saveFormDesgin = '/api/visualDev/saveFormDesgin',
+    saveListDesgin = '/api/visualDev/saveListDesgin',
+    delFormDesgin = '/api/visualDev/delFormDesgin',
 }
 export const visualDevById = (params?: any) =>
     request({
@@ -13,9 +15,16 @@ export const visualDevById = (params?: any) =>
         method: 'get'
     });
 
-export const getVisualDevList = (params?: any) =>
+export const formDesginList = (params?: any) =>
     request({
-        url: `${Api.visualDevList}`,
+        url: `${Api.formDesginList}`,
+        method: 'get',
+        data: params,
+    });
+
+export const listDesginList = (params?: any) =>
+    request({
+        url: `${Api.listDesginList}`,
         method: 'get',
         data: params,
     });
@@ -27,22 +36,29 @@ export const fieldsByModel = (params?: any) =>
         data: params,
     });
 
-export const modelInfo = (params?: any) =>
+export const getRequest = (params?: any) =>
     request({
         url: `${Api.modelInfo}/${params}`,
         method: 'get'
     });
 
-export const saveVisualDev = (params?: any) =>
+export const saveFormDesgin = (params?: any) =>
     request({
-        url: Api.saveVisualDev,
+        url: Api.saveFormDesgin,
         method: 'post',
         data: params,
     });
 
-export const delVisualDev = (params?: any) =>
+export const saveListDesgin = (params?: any) =>
     request({
-        url: Api.delVisualDev,
+        url: Api.saveListDesgin,
+        method: 'post',
+        data: params,
+    });
+
+export const delFormDesgin = (params?: any) =>
+    request({
+        url: Api.delFormDesgin,
         method: 'post',
         data: params,
     });

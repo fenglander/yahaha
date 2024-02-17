@@ -80,9 +80,13 @@ public class MenuOutput
     public List<MenuOutput> Children { get; set; }
 
     /// <summary>
-    /// 应用
+    /// 表单设计
     /// </summary>
-    public long? VisualDevId { get; set; }
+    public long? FormDesignId { get; set; }
+    /// <summary>
+    /// 列表设计
+    /// </summary>
+    public long? ListDesignId { get; set; }
     /// <summary>
     /// 系统模型Id
     /// </summary>

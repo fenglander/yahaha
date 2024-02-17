@@ -45,7 +45,7 @@ const remoteMethod = (query: string) => {
     loading.value = true;
     if (query !== '') {
         const res = useSysModel().sysModelList;
-        options.value = res.filter((item: any) => item.Name !== null && item.Name.trim() !== "" && item.Name.trim().indexOf(query) > -1)
+        options.value = res.filter((item: any) => item.Name !== null && item.Name.trim() !== "" && item.Name.toLowerCase().trim().indexOf(query.toLowerCase()) > -1)
             .map((item: any) => ({
                 id: item.Id,
                 model: item.Description,

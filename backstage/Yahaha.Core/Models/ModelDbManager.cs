@@ -103,7 +103,7 @@ public static class ModelDbManager
 
         //dbProvider.Storageable(UpdateFieldInfoRecs).DefaultAddElseUpdate().ExecuteCommand();
         dataElement.SetSysFieldsCache(UpdateFieldInfoRecs);
-        dataElement.AddElseUpdate(UpdateFieldInfoRecs);
+        dataElement.BatchAddElseUpdate(UpdateFieldInfoRecs);
         List<SysField> DeleteFieldInfoRecs = ExistFieldInfoRecs.Where(it => !RetainedFieldIds.Contains(it.Id)).ToList();
         dataElement.Delete(DeleteFieldInfoRecs);
         dataElement.Delete(DeleteModelInfoRecs);
@@ -178,7 +178,7 @@ public static class ModelDbManager
                 actionList.Add(Action);
             }
         }
-        dataElement.AddElseUpdate(actionList);
+        dataElement.BatchAddElseUpdate(actionList);
         List<SysAction> DeleteActionRecs = ExistActionRecs.Where(it => !RetainedActionIds.Contains(it.Id)).ToList();
         dataElement.Delete(DeleteActionRecs);
     }

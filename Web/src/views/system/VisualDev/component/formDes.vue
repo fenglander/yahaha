@@ -32,7 +32,10 @@
 					</div>
 				</template>
 			</el-dialog>
-			<el-dialog v-model="showSelectModel" title="选择模型" :close-on-click-modal="false" :show-close=false>
+			<el-dialog v-model="showSelectModel" :close-on-click-modal="false" :show-close=false>
+				<template #header="{ titleId, titleClass }">
+					<h6 style="color: white;" :id="titleId" :class="titleClass">选择模型</h6>
+				</template>
 				<select-model v-model="state.formData.form.sysModel" @clost="props.close"></select-model>
 				<template #footer>
 					<span>
@@ -52,9 +55,9 @@ import FormControlAttr from '/@/components/yahaha/design/form/components/formCon
 import AceDrawer from '/@/components/yahaha/design/components/aceDrawer.vue'
 import { useVisualDev } from '/@/stores/visualDev';
 import selectModel from './selectModel.vue'
-import { ref, reactive, provide, onMounted } from 'vue'
+import { watch, ref, reactive, provide, onMounted } from 'vue'
 import { useDesignFormStore } from '/@/stores/designForm'
-import { saveVisualDev, delVisualDev } from '/@/api/visualDev';
+import { saveFormDesgin, delFormDesgin } from '/@/api/visualDev';
 import { ElMessage } from 'element-plus'
 import { useRoute } from 'vue-router'
 import { baseAttrItem } from '/@/components/yahaha/design/form/components/controlBaseAttr'
@@ -66,7 +69,7 @@ import {
 	string2json,
 	stringToObj
 } from '/@/components/yahaha/design/utils/form'
-import { useLayoutStore } from '/@/components/yahaha/design/store/layout'
+import { useLayoutStore } from '/@/stores/layout'
 import { FormData, FormList } from '/@/components/yahaha/design/types'
 const props = defineProps({
 	desId: {
@@ -237,18 +240,17 @@ const saveData = async () => {
 		modelName: state.formData.form.modelName, // 数据源允许在表单属性设置里修改的
 		sysModel: state.formData.form.sysModel,
 		type: 4, // 1表单 2列表
-		formDict: json2string(state.formDict),
 		Id: state.formData.form.resId,
 		CreateUser: state.CreateUser && Object.keys(state.CreateUser).length === 0 && state.CreateUser.constructor === Object ? null : state.CreateUser,
 		CreateTime: state.CreateTime,
 	}
 	state.loading = true;
-	await saveVisualDev(params).then((res: any) => {
+	await saveFormDesgin(params).then((res: any) => {
 		state.formData.form.resId = res.data.result ?? 0;
 	}).catch(() => {
 	})
 	// 初始化表单设计缓存
-	await useVisualDev().setVisualDevList();
+	await useVisualDev().setFormDesginList();
 	state.loading = false;
 	showDrawer.value = false;
 };
@@ -275,20 +277,20 @@ const filterObjectByPaths = (obj: any) => {
 	const filteredObject: any = {};
 
 	pathList.forEach(path => {
-		const value = getFieldData(obj,path);
+		const value = getFieldData(obj, path);
 		if (value) {
-            filteredObject[path] = value;
-        }
+			filteredObject[path] = value;
+		}
 	});
 	// 如果存在 list 属性，则递归调用 filterObjectByPaths 函数进行额外过滤
-    if (obj.list) {
-        filteredObject.list = obj.list.map((item: any) => filterObjectByPaths(item));
-    }
+	if (obj.list) {
+		filteredObject.list = obj.list.map((item: any) => filterObjectByPaths(item));
+	}
 
-    // 如果存在 child 属性，则递归调用 filterObjectByPaths 函数进行额外过滤
-    if (obj.child) {
-        filteredObject.child = obj.child.map((item: any) => filterObjectByPaths(item));
-    }
+	// 如果存在 child 属性，则递归调用 filterObjectByPaths 函数进行额外过滤
+	if (obj.child) {
+		filteredObject.child = obj.child.map((item: any) => filterObjectByPaths(item));
+	}
 
 	return filteredObject;
 };
@@ -298,7 +300,7 @@ const delData = async () => {
 	let params: any = {
 		id: state.formData.form.resId,
 	}
-	await delVisualDev(params)
+	await delFormDesgin(params)
 	state.loading = false;
 	showDrawer.value = false;
 }
@@ -309,7 +311,7 @@ const getInitData = () => {
 		const id = props.desId;// 当前记录保存的id
 		// 获取初始表单数据
 		state.loading = true;
-		const result = useVisualDev().getVisualDev(id);
+		const result = useVisualDev().getFormDesgin(id);
 		if (result) {
 			const formData = stringToObj(result.FormData);
 			state.formData = formData;
@@ -435,6 +437,16 @@ const selectTemplate = (data: FormData) => {
 const searchCheckField = (data: FormList) => {
 	state.formData.list.push(data)
 }
+watch(
+	() => store.formDesginData.list,
+	(v: any) => {
+		state.formData.list = v;
+	},
+	{
+		deep: true
+	}
+)
+
 getInitData()
 // 从数据源点创建表单过来时，带有参数source
 onMounted(() => {

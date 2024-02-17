@@ -24,7 +24,7 @@ import {
 } from '../../utils'
 import { useSysModel } from '/@/stores/sysModel';
 import * as api from '/@/api/model/';
-import { applyFilter } from '../../utils/applyFilter'
+import { evaluateExpression } from '../../utils/applyFilter'
 import { useDesignFormStore } from '/@/stores/designForm'
 const props = withDefaults(
   defineProps<{
@@ -190,20 +190,23 @@ const TrigRelateFieldVals = (key: string) => {
 const setFieldStatus = (data: FormList[]) => {
   if (props.type === 5 || props.type === 3) { return; }
   data.forEach((it: FormList) => {
+    it.origReadonly = false;
+    it.origRequired = false;
+    it.origInvisible = false;
     if (it.Relate || it.Name === 'Id') {
       it.origReadonly = true;
     }
     else if (it.readonlyExp) {
-      it.origReadonly = evaluateExpression(it.readonlyExp)
+      it.origReadonly = evaluateExpression(formValues.value,it.readonlyExp)
     }
     if (it.invisibleExp) {
-      it.origInvisible = evaluateExpression(it.invisibleExp)
+      it.origInvisible = evaluateExpression(formValues.value,it.invisibleExp)
     }
     if (it.NotNull && it.Name !== 'Id') {
       it.origRequired = true
     }
     else if (it.requiredExp) {
-      it.origRequired = evaluateExpression(it.requiredExp)
+      it.origRequired = evaluateExpression(formValues.value,it.requiredExp)
     }
 
     if (it.child && it.child.length > 0) {
@@ -213,34 +216,6 @@ const setFieldStatus = (data: FormList[]) => {
       setFieldStatus(it.list)
     }
   })
-}
-
-const evaluateExpression = (exp: any) => {
-  try {
-    if (/^[0-9]$/.test(exp)) {
-      return exp.toString === '0' ? false : true
-    }
-    // 检查是否以 "1=1" 或 "true" 开头
-    if (!exp.startsWith("[")) {
-      if (/^\d+([=<>])\d+$/.test(exp) || /^(true|false)$/.test(exp)) {
-        return eval(exp); // 使用eval进行简单的求值
-      }
-    }
-    if (!exp.startsWith("[")) {
-      if (/^\d+([=<>])\d+$/.test(exp) || /^(true|false)$/.test(exp)) {
-        return eval(exp); // 使用eval进行简单的求值
-      }
-    }
-    exp = exp.replace(/'/g, '"');
-    if (!exp.startsWith("[[")) {
-      exp = '[' + exp + ']';
-    }
-    return applyFilter(formValues.value, JSON.parse(exp));
-  } catch (error) {
-    console.error(`Expression Parsing failed:`, error);
-    return false;
-  }
-
 }
 
 
@@ -487,10 +462,12 @@ watch(
   }
 )
 watch(
-  () => formDesginData.value?.list,
+  () => formDesginData.value,
   (v: any) => {
-    v && useDesignFormStore().setFormData(v);
-    emits('update:formData', v);
+    if (v) {
+      //emits('update:formData', v); //暂时不知道什么原因不起作用，在外部用watch
+      useDesignFormStore().setFormData(v.list);
+    }
   },
   {
     deep: true,

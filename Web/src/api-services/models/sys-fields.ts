@@ -18,31 +18,31 @@ export interface SysFields {
      * @type {number}
      * @memberof SysFields
      */
-    id?: number;
+    Id?: number;
     /**
      * 名称
      * @type {string}
      * @memberof SysFields
      */
-    name: string;
+    Name: string;
     /**
      * 描述
      * @type {string}
      * @memberof SysFields
      */
-    description?: string | null;
+    Description?: string | null;
     /**
      * 帮助
      * @type {string}
      * @memberof SysFields
      */
-    help?: string | null;
+    Help?: string | null;
     /**
      * 模型ID
      * @type {number}
      * @memberof SysFields
      */
-    modelid?: number | null;
+    Modelid?: number | null;
     /**
      * 数据类型
      * @type {string}
@@ -54,7 +54,7 @@ export interface SysFields {
      * @type {string}
      * @memberof SysFields
      */
-    navigattype?: string | null;
+    Navigattype?: string | null;
     /**
      * 关系字段
      * @type {string}

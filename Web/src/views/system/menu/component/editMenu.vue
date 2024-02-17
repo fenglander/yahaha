@@ -57,7 +57,7 @@
 						</el-col>
 						<el-col :xs="24" :sm="12" :md="12" :lg="12" :xl="12" class="mb20">
 							<el-form-item label="表单应用">
-								<el-select v-model="state.ruleForm.visualDevId" clearable filterable remote reserve-keyword
+								<el-select v-model="state.ruleForm.formDesignId" clearable filterable remote reserve-keyword
 									placeholder="输入名称" remote-show-suffix :remote-method="getVisualDevOptions"
 									@focus="getVisualDevOptions" @change="changeModelIdByVisualDev" :loading="loading">
 									<el-option v-for="item in visualDevOptions" :key="item.Id" :label="item.FullName"
@@ -222,28 +222,28 @@ const cancel = () => {
 const getVisualDevOptions = (query?: string) => {
 	loading.value = true;
 	if (state.ruleForm.modelId) {
-		visualDevOptions.value = useVisualDev().getVisualDevList().filter((it: any) => it.ModelId === state.ruleForm.modelId)
+		visualDevOptions.value = useVisualDev().formDesginList.filter((it: any) => it.ModelId === state.ruleForm.modelId)
 	} else {
-		visualDevOptions.value = useVisualDev().getVisualDevList();
+		visualDevOptions.value = useVisualDev().formDesginList;
 	}
 	if (query && query !== '' && query.constructor !== FocusEvent) {
 		visualDevOptions.value = visualDevOptions.value.filter((item: any) => item.FullName !== null && item.FullName.trim() !== "" && item.FullName.trim().indexOf(query) > -1)
 	}
-	// const res = await getVisualDevList(query);
+	// const res = await setFormDesginList(query);
 	// visualDevOptions.value = res.data?.result ?? [];
 	loading.value = false;
 }
 getVisualDevOptions();
 
 const clearVisualDev = () => {
-	const visualDev = useVisualDev().getVisualDev(state.ruleForm.visualDevId);
+	const visualDev = useVisualDev().getFormDesgin(state.ruleForm.formDesignId);
 	if (visualDev && visualDev.ModelId !== state.ruleForm.modelId) {
-		state.ruleForm.visualDevId = null
+		state.ruleForm.formDesignId = null
 	}
 }
 
 const changeModelIdByVisualDev = () => {
-	const visualDev = useVisualDev().getVisualDev(state.ruleForm.visualDevId);
+	const visualDev = useVisualDev().getFormDesgin(state.ruleForm.formDesignId);
 	if (visualDev) {
 		state.ruleForm.modelId = formatNumber(visualDev.ModelId);
 	}

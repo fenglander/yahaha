@@ -20,13 +20,13 @@ public class SysMenuSeedData : IYahahaSeedData<SysMenu>
     /// 种子数据
     /// </summary>
     /// <returns></returns>
-    [IgnoreUpdate]
     public IEnumerable<SysMenu> HasData()
     {
 
         return new[]
         {
-            new SysMenu{ Id=1310000000652, Pid=1310000000601, Title="表单设计", Path="/develop/VisualDev", Name="VisualDev", Component="/system/VisualDev/index", IsAffix=true, Type=MenuTypeEnum.Menu, Icon="ele-Brush", CreateTime=DateTime.Parse("2022-02-10 00:00:00"), OrderNo=140 },
+            new SysMenu{ Id=1310000000652, Pid=1310000000601, Title="表单设计", Path="/develop/formDesign", Name="formDesign", Component="/system/visualDev/formDesignList", Type=MenuTypeEnum.Menu, Icon="ele-Memo", CreateTime=DateTime.Parse("2022-02-10 00:00:00"), OrderNo=140 },
+            new SysMenu{ Id=1310000000653, Pid=1310000000601, Title="列表设计", Path="/develop/listDesign", Name="listDesign", Component="/system/visualDev/listDesignList", Type=MenuTypeEnum.Menu, Icon="ele-Tickets", CreateTime=DateTime.Parse("2022-02-10 00:00:00"), OrderNo=140 },
         };
     }
 }

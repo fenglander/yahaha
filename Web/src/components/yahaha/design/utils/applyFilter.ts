@@ -61,6 +61,34 @@ function evaluateNestedConditions(data: Data, conditions: Condition[], logicalOp
 }
 
 
+export function evaluateExpression(data: Data, exp: any) {
+    try {
+        if (/^[0-9]$/.test(exp)) {
+            return exp.toString === '0' ? false : true
+        }
+        // 检查是否以 "1=1" 或 "true" 开头
+        if (!exp.startsWith("[")) {
+            if (/^\d+([=<>])\d+$/.test(exp) || /^(true|false)$/.test(exp)) {
+                return eval(exp); // 使用eval进行简单的求值
+            }
+        }
+        if (!exp.startsWith("[")) {
+            if (/^\d+([=<>])\d+$/.test(exp) || /^(true|false)$/.test(exp)) {
+                return eval(exp); // 使用eval进行简单的求值
+            }
+        }
+        exp = exp.replace(/'/g, '"');
+        if (!exp.startsWith("[[")) {
+            exp = '[' + exp + ']';
+        }
+        return applyFilter(data, JSON.parse(exp));
+    } catch (error) {
+        console.error(`Expression Parsing failed:`, error);
+        return false;
+    }
+}
+
+
 
 export function applyFilter(data: Data, filter: Condition | Condition[] | boolean): boolean {
     if (Array.isArray(filter)) {

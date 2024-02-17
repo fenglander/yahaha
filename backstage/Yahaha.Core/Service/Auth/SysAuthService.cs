@@ -141,8 +141,8 @@ public class SysAuthService : IDynamicApiController, ITransient
             { ClaimConst.RealName, user.RealName },
             { ClaimConst.AccountType, user.AccountType },
             { ClaimConst.OrgId, user.OrgId },
-            { ClaimConst.OrgName, user.SysOrg?.Name },
-            { ClaimConst.OrgType, user.SysOrg?.OrgType },
+            { ClaimConst.OrgName, user.SysOrg?.Name ?? "" },   // 如果 user.SysOrg 为 null，则设为默认值
+            { ClaimConst.OrgType, user.SysOrg?.OrgType ?? "" }, // 如果 user.SysOrg 为 null，则设为默认值
         }, tokenExpire);
 
         // 生成刷新Token令牌

@@ -42,7 +42,8 @@ declare interface RoutesListState<T = any> {
 
 // 表单设计信息缓存
 declare interface visualDevState<T = any> {
-	visualDevList: T[];
+	formDesginList: T[];
+	listDesginList: T[];
 }
 
 // 表单组件信息缓存

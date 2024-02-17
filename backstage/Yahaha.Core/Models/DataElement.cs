@@ -185,7 +185,7 @@ public class DataElement
                             var DeleteRecs = DelValueList.Where(it => it.ContainsKey("Id") && !ids.Contains(Convert.ToInt64(it["Id"]))).ToList();
                             Delete(Field.RelModelName, (List<Dictionary<string, object>>)DeleteRecs);
                         }
-                        AddElseUpdate(Field.RelModelName, resultList);
+                        BatchAddElseUpdate(Field.RelModelName, resultList);
                         continue;
                     }
                     else if (Field.tType == "ManyToOne")
@@ -274,14 +274,22 @@ public class DataElement
         return res;
     }
 
-    public int AddElseUpdate(string Model, List<Dictionary<string, object>> Obj)
+    public int BatchAddElseUpdate(string Model, List<Dictionary<string, object>> Obj)
     {
         int res = 0;
         for (int i = 0; i < Obj.Count(); i++)
         {
             if (Obj[i].ContainsKey("Id") && Obj[i]["Id"] != null && long.TryParse(Obj[i]["Id"].ToString(), out long id) && id != 0)
             {
-                Update(Model, Obj[i]);
+                var existingItem = _db.Queryable<dynamic>().AS(Model).Where("Id = @Id", new { Id = id }).ToList().FirstOrDefault();
+                if (existingItem == null)
+                {
+                    Create(Model,Obj[i]);
+                }
+                else
+                {
+                    Update(Model, Obj[i]);
+                }
             }
             else
             {
@@ -289,17 +297,17 @@ public class DataElement
             }
             res++;
         }
-        return 0;
+        return res;
     }
 
     public int AddElseUpdate(string Model, object Obj)
     {
         var DictList = ToDictionaryList(Obj);
-        return AddElseUpdate(Model, DictList);
+        return BatchAddElseUpdate(Model, DictList);
     }
 
 
-    public int AddElseUpdate<T>(List<T> Obj)
+    public int BatchAddElseUpdate<T>(List<T> Obj)
     {
         string typeName = typeof(T).Name;
         int res = 0;
@@ -337,7 +345,14 @@ public class DataElement
     {
         string typeName = typeof(T).Name;
         Dictionary<string, object> keyValuePairs = ObjectToDictionary(Obj);
-        return AddElseUpdate(typeName, new List<Dictionary<string, object>> { keyValuePairs });
+        if (keyValuePairs.ContainsKey("Id") && keyValuePairs["Id"] != null && (long)keyValuePairs["Id"] != 0)
+        {
+            return Update(typeName, keyValuePairs);
+        }
+        else
+        {
+            return Create(typeName, keyValuePairs);
+        }
     }
 
 

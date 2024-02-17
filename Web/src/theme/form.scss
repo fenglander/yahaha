@@ -155,10 +155,11 @@ $mainColor: #66b1ff;
 
   .main-form {
     background: #fff;
-    border: 1px dashed #999;
+    // border: 1px dashed #999;
     margin: 10px;
-    overflow-y: auto;
-    overflow-x: hidden;
+    height: calc(100% - 50px);;
+    // overflow-y: auto;
+    // overflow-x: hidden;
     position: relative
   }
 }

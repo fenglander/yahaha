@@ -7,6 +7,7 @@
 public interface IYahahaSeedData<TEntity>
     where TEntity : class, new()
 {
+
     /// <summary>
     /// 返回种子数据
     /// </summary>

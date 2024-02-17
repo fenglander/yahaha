@@ -56,7 +56,7 @@ const actionType = ref<number>(3);
 
 const visualDev = computed(() => {
   if (query) {
-    return visualDevStores.getVisualDev(query.visualDev);
+    return visualDevStores.getFormDesgin(query.visualDev);
   } else {
     return null
   }

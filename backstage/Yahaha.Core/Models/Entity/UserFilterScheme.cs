@@ -4,33 +4,39 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Yahaha.Core.VisualDev;
 
 namespace Yahaha.Core.Models.Entity;
 
-[SugarTable(null, "用户筛选方案")]
+[SugarTable(null, "用户查询方案")]
 [SystemTable]
 public class UserFilterScheme : EntityBase
 {
 
-    [SugarColumn(ColumnDescription = "名称")]
+    [YhhColumn(ColumnDescription = "名称")]
     public string Name { get; set; }
 
-    [SugarColumn(ColumnDescription = "表名")]
-    public string? TableName { get; set; }
+    [YhhColumn(ColumnDescription = "关联用户")]
+    public string? UserName { get; set; }
+    [YhhColumn(ColumnDescription = "关联用户")]
+    public SysUser? User { get; set; }
 
-    [SugarColumn(ColumnDescription = "模型ID")]
-    public long? ModelId { get; set; }
+    [YhhColumn(ColumnDescription = "模型全称")]
+    public string? SysModelFull { get; set; }
 
-    [YhhColumn(ColumnDescription = "模型",RelationalType = RelationalType.ManyToOne)]
-    public SysModel SysModel { get; set; } //不能赋值只能是null
+    [YhhColumn(ColumnDescription = "模型", RelationalType = RelationalType.ManyToOne)]
+    public SysModel SysModel { get; set; }
 
-    [SugarColumn(ColumnDescription = "默认查询字段")]
+    [YhhColumn(ColumnDescription = "关联列表设计", RelationalType = RelationalType.ManyToOne)]
+    public ListDesign? ListDesign { get; set; }
+
+    [YhhColumn(ColumnDescription = "查询字段")]
     public string? DefaultFields { get; set; }
 
-    [SugarColumn(ColumnDescription = "默认查询参数")]
+    [YhhColumn(ColumnDescription = "查询参数")]
     public string? DefaultFilter { get; set; }
 
-    [SugarColumn(ColumnDescription = "默认")]
+    [YhhColumn(ColumnDescription = "默认")]
     public bool? Default { get; set; }
 
 }

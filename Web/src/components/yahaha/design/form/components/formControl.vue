@@ -95,7 +95,7 @@ watch(() => props.modelId, (val) => {
 
 // 加载当前列表所属的表单，从表单中提取可用于搜索的字段
 const getFormField = (formId: Number) => {
-  var res = useVisualDev().getVisualDev(formId);
+  var res = useVisualDev().getFormDesgin(formId);
   const data = stringToObj(res.FormData);
   if (data && data.list) {
     forEachGetData(data.list)

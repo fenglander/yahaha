@@ -43,7 +43,8 @@ export async function initBackEndControlRoutes() {
 	// https://gitee.com/lyt-top/vue-next-admin/issues/I5F1HP
 	await useUserInfo().setUserInfos();
 	// 初始化表单设计缓存
-	await useVisualDev().setVisualDevList();
+	await useVisualDev().setFormDesginList();
+	await useVisualDev().setListDesginList();
 	// 初始模型数据缓存
 	await useSysModel().setSysModels();
 	await useSysModel().setSysFiedls();

@@ -48,7 +48,7 @@ const btnList = computed(() => {
   if (props.showKey?.length) {
     // 按照指定的key显示
     return list.filter((item: any) => {
-      return props.showKey.includes(item.key)
+      return props.showKey.includes(item.icon)
     })
   } else if (props.hideKey?.length) {
     // 按照指定的key隐藏

@@ -28,7 +28,7 @@
     defineProps<{
       modelValue: boolean
       title?: string
-      direction?: 'rtl' | 'ltr'
+      direction?: string //'rtl' | 'ltr'
       content: string
       id?: string
       codeType?: string

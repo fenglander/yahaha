@@ -32,7 +32,13 @@ public class SysMenu : EntityBase
     /// 应用
     /// </summary>
     [SugarColumn(ColumnDescription = "应用设计")]
-    public long? VisualDevId { get; set; }
+    public long? FormDesignId { get; set; }
+
+    /// <summary>
+    /// 应用
+    /// </summary>
+    [SugarColumn(ColumnDescription = "列表设计")]
+    public long? ListDesignId { get; set; }
 
     /// <summary>
     /// 系统模型

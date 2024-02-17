@@ -134,7 +134,7 @@ import { useSysModel } from '/@/stores/sysModel';
 import { formatNumber, deepClone, readWidgetOptions } from '../../utils/'
 import { getFieldData, applyFilter } from '../../utils/applyFilter'
 import { baseAttrItem, formAttrItem, otherAttrItem } from './controlBaseAttr'
-import getOpationWidget from './widgets/opationWidget/getOpationWidget'
+import getOpationWidget from '/@/components/yahaha/design/widgets/opationWidget/getOpationWidget'
 const props = withDefaults(
   defineProps<{
     formData: any

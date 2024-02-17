@@ -97,7 +97,7 @@ export interface UpdateMenuInput {
      * @type {number}
      * @memberof UpdateMenuInput
      */
-    visualDevId?: number | null;
+    formDesignId?: number | null;
     /**
      * 模型id
      * @type {number}

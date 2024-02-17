@@ -22,6 +22,7 @@ export interface FormList {
   Name?: string
   widget?: string
   curWidget?: string
+  Description?: string
   tType?: string
   isLayout?: boolean
   control: any // 当前type表单控件所有props

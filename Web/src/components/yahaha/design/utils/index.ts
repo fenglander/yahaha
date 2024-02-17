@@ -1,5 +1,5 @@
 export const EDITTYPE = 'javascript' // 弹出编辑器可输入类型 json/javascript
-
+import jsBeautify from 'js-beautify'
 
 export const aceEdit = (data: any, id?: string, type?: string | undefined) => {
   id = id || 'editJson'
@@ -156,6 +156,20 @@ export const TrigRelateFieldVals = (data: any, relateFieldList: any, key: string
   }
 }
 
+export const hasKey = (obj: any, path: string) => {
+  const keys = path.split('.');
+  let currentObj = obj;
+
+  for (const key of keys) {
+    if (!currentObj || !currentObj.hasOwnProperty(key)) {
+      return false;
+    }
+    currentObj = currentObj[key];
+  }
+
+  return true;
+}
+
 /****
  * 动态插入移除css
  * @param id 标签id
@@ -232,13 +246,61 @@ export function keepOnlyId(obj: any) {
   return { Id: formatNumber(obj.Id) };
 }
 
+export function obj2string(o: any) {
+  let r: any = []
+  if (o === null) {
+    // 这里有个问题 因typeOf null=object,下面判断会报错
+    return null
+  }
+  if (typeof o === 'string') {
+    return (
+      '"' +
+      o
+        .replace(/([\\'\\"\\])/g, '\\$1')
+        .replace(/(\n)/g, '\\n')
+        .replace(/(\r)/g, '\\r')
+        .replace(/(\t)/g, '\\t') +
+      '"'
+    )
+  }
+  if (typeof o === 'object') {
+    if (!o.sort) {
+      for (const i in o) {
+        if (o.hasOwnProperty(i)) {
+          let iii = i
+          if (i.indexOf('-') !== -1) {
+            iii = `"${i}"`
+          }
+          r.push(iii + ':' + obj2string(o[i]))
+        }
+      }
+      if (
+        !!document.all &&
+        !/^\n?function\s*toString\(\)\s*\{\n?\s*\[native code\]\n?\s*\}\n?\s*$/.test(
+          o.toString
+        )
+      ) {
+        r.push('toString:' + o.toString.toString())
+      }
+      r = '{' + r.join() + '}'
+    } else {
+      for (let i = 0; i < o.length; i++) {
+        r.push(obj2string(o[i]))
+      }
+      r = '[' + r.join() + ']'
+    }
+    return r
+  }
+  return o && o.toString()
+}
+
 
 import type { widgetConfig } from '../types'
 
 /**读取所有组件配置项 */
 export const readWidgetOptions = () => {
   //const template = import.meta.globEager('./template/*.ts')
-  const opation = import.meta.glob('../form/components/widgets/opations/*.ts', { eager: true })
+  const opation = import.meta.glob('../widgets/opations/*.ts', { eager: true })
   const temp: widgetConfig[] = [];
   Object.keys(opation).forEach((key: string) => {
     const file: any = opation[key]
@@ -254,7 +316,7 @@ export const readWidgetOptions = () => {
 }
 
 // 判断并添加属性
-export const addKeyIfNotExists = (obj: any, key: string, val?:any) => {
+export const addKeyIfNotExists = (obj: any, key: string, val?: any) => {
   if (!(key in obj)) {
     obj[key] = val || null;
   }
@@ -323,6 +385,30 @@ export function stringToObj(string: string) {
     return JSON.parse(string)
   }
 }
+
+export function string2json(string: string) {
+  return JSON.parse(string || '{}')
+}
+
+export function json2string(obj: any, isBeautify?: boolean) {
+  return isBeautify ? JSON.stringify(obj, null, 2) : JSON.stringify(obj)
+}
+
+export function objToStringify(obj: any, isBeautify?: boolean) {
+  if (EDITTYPE === 'javascript') {
+    if (isBeautify) {
+      return jsBeautify('opt=' + obj2string(obj), {
+        indent_size: 2,
+        brace_style: 'expand'
+      })
+    } else {
+      return obj2string(obj)
+    }
+  } else {
+    return isBeautify ? JSON.stringify(obj, null, 2) : JSON.stringify(obj)
+  }
+}
+
 
 
 // provide 方法定义的key

@@ -85,8 +85,8 @@ export function formatTwoStageRoutes(arr: any) {
 			if (v.modelId) {
 				v.query = { ...v.query, modelId: v.modelId };
 			}
-			if (v.visualDevId) {
-				v.query = { ...v.query, visualDevId: v.visualDevId };
+			if (v.formDesignId) {
+				v.query = { ...v.query, formDesignId: v.formDesignId };
 			}
 			newArr[0].children.push({ ...v });
 			// 存 name 值，keep-alive 中 include 使用，实现路由的缓存
@@ -149,7 +149,7 @@ router.beforeEach(async (to, from, next) => {
  */
 function dgeneralViewFormRouting(to: any) {
 	if (to.path.indexOf('generalView/form') > -1) {
-		const VisualDev = useVisualDev().getVisualDev(to.query.visualDev)
+		const VisualDev = useVisualDev().getFormDesgin(to.query.visualDev)
 		const title = ' | 详情';
 		if (VisualDev) {
 			// 没有传id为新增

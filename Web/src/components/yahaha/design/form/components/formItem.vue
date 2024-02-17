@@ -2,7 +2,7 @@
 <template>
   <template v-if="!itemInfo.invisible">
     <el-form-item v-bind="itemInfo.item" :prop="tProp || itemInfo.Name" :class="config.className"
-      :label="getLabel(itemInfo as FormItem)">
+      :label="getLabel(itemInfo)">
       <template #label>
         <el-tooltip :disabled="isEmptyRoNull(config.help)" :content="config.help" placement="top">
           <el-text :style="{ color: textColor }" tag="b">{{ getLabel(itemInfo) }}</el-text>
@@ -20,8 +20,8 @@ import {
   computed,
   onUnmounted,
 } from 'vue'
-import { FormItem, FormList } from '../../types'
-import getWidget from './widgets/getWidget'
+import { FormList } from '../../types'
+import getWidget from '/@/components/yahaha/design/widgets/getWidget'
 import {
   constControlChange,
   constFormProps,
@@ -54,16 +54,16 @@ const itemInfo = computed({
     }
     if ([null, undefined, 0, ''].includes(props.data.curWidget)) {
       getDefaultWidget(temp);
-      if (temp.child) {
-        temp.child.forEach((it: FormList) => {
-          getDefaultWidget(it);
-        })
-      }
       if (temp.list) {
         temp.list.forEach((it: FormList) => {
           getDefaultWidget(it);
         })
       }
+    }
+    if (temp.child) {
+      temp.child.forEach((it: FormList) => {
+        getDefaultWidget(it);
+      })
     }
     // 设置状态
     if (type.value === 3) {
@@ -89,7 +89,7 @@ const getDefaultWidget = (info: FormList) => {
         return true
       }
       else {
-        return item.fieldType.includes(info.tType)
+        return item.fieldType.includes(info.tType as string)
       }
     });
     info.curWidget = filteredItem.name;
@@ -163,7 +163,7 @@ const value = computed({
       // 表格和弹性布局
       return props.modelValue
     } else {
-      return formProps.value.model[props.data.Name]
+      return formProps.value.model[props.data.Name as string]
     }
   },
   set(newVal: any) {
@@ -172,9 +172,11 @@ const value = computed({
 })
 
 
-const curWidget = (name: string) => {
+const curWidget = (name: string | undefined) => {
   //写的时候，组件的起名一定要与dragList中的element名字一模一样，不然会映射不上
-  return getWidget[name]
+  if (name) {
+    return getWidget[name]
+  }
 }
 
 // 当通用修改属性功能添加新字段时，数组更新但toRefs没更新
