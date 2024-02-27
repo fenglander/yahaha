@@ -8,6 +8,8 @@ enum Api {
     saveFormDesgin = '/api/visualDev/saveFormDesgin',
     saveListDesgin = '/api/visualDev/saveListDesgin',
     delFormDesgin = '/api/visualDev/delFormDesgin',
+    userListDesignScheme = '/api/visualDev/userListDesignScheme',
+    userFilterSchemes = '/api/visualDev/userFilterSchemes',
 }
 export const visualDevById = (params?: any) =>
     request({
@@ -60,5 +62,19 @@ export const delFormDesgin = (params?: any) =>
     request({
         url: Api.delFormDesgin,
         method: 'post',
+        data: params,
+    });
+
+export const userListDesignScheme = (params?: any) =>
+    request({
+        url: Api.userListDesignScheme,
+        method: 'get',
+        data: params,
+    });
+
+export const userFilterSchemes = (params?: any) =>
+    request({
+        url: Api.userFilterSchemes,
+        method: 'get',
         data: params,
     });

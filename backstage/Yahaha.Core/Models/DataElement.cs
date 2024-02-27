@@ -1,5 +1,4 @@
 ﻿using AngleSharp.Text;
-using NetTaste;
 using Newtonsoft.Json.Linq;
 using System.Dynamic;
 using Yahaha.Core.Models.Entity;
@@ -17,7 +16,7 @@ public class DataElement
         _db = db;
     }
 
-    public ISugarQueryable<dynamic> Search(string Model)
+    public ISugarQueryable<dynamic> Search(string Model,string? ShortName = "")
     {
         List<string> relationalTypes = Enum.GetValues(typeof(RelationalType))
                                            .Cast<RelationalType>()
@@ -29,11 +28,11 @@ public class DataElement
         List<string> FieldNames = Fields
             .Select(it => string.Format("\"{0}\" as \"{1}\" ", it.Name.ToLower(), it.Name)).ToList();
         string columns = string.Join(", ", FieldNames);
-        string sql = string.Format("select {0} from {1} ", columns, Model);
+        //string sql = string.Format("select {0} from {1} ", columns, Model);
 
         //_db.Queryable<dynamic>().AS(Model);
 
-        var query = _db.SqlQueryable<dynamic>(sql).OrderBy("\"Id\"");
+        var query = _db.Queryable<dynamic>().AS(Model,ShortName).Select(columns).OrderBy("Id");
         return query;
     }
 
@@ -111,7 +110,7 @@ public class DataElement
             // 查询旧数据
             var conModels = new List<IConditionalModel>
             {
-                new ConditionalModel { FieldName = "\"Id\"", ConditionalType = ConditionalType.Equal, FieldValue =  Obj["Id"].ToString(), CSharpTypeName = "long" }
+                new ConditionalModel { FieldName = "Id", ConditionalType = ConditionalType.Equal, FieldValue =  Obj["Id"].ToString(), CSharpTypeName = "long" }
             };
             var raw = Search(Model).Where(conModels).ToList();
             DrillDownDataDto DrillDownParams = new DrillDownDataDto
@@ -216,13 +215,14 @@ public class DataElement
             {
                 Value = DateTime.Now;
             }
-            else if (!IsUpdate && Field.Name == "CreateTime")
+            else if (Field.Name == "CreateTime")
             {
-                Value = DateTime.Now;
+                Value = IsUpdate && Value == null ? DelValue : DateTime.Now;
+
             }
             else if (!IsUpdate && Field.Name == "CreateUser" && App.User != null)
             {
-                Value = long.Parse(App.User?.FindFirst(ClaimConst.UserId)?.Value);
+                Value = IsUpdate && Value == null ? DelValue : long.Parse(App.User?.FindFirst(ClaimConst.UserId)?.Value);
             }
 
             dt.Add(Field.Name, Value);
@@ -436,7 +436,7 @@ public class DataElement
             if (!_cache.TryGetValue(cacheKey, out TempValueList))
             {
                 // 如果缓存中没有值，则执行数据库查询
-                TempValueList = Search(Params.model).Where(string.Format("{0} = {1}", "\"" + Params.relField + "\"", Params.id)).ToList();
+                TempValueList = Search(Params.model).Where(string.Format("{0} = {1}", Params.relField, Params.id)).ToList();
                 // 将查询结果添加到缓存中
                 _cache.Set(cacheKey, TempValueList, 100);
             }
@@ -626,6 +626,25 @@ public class DataElement
             res = res.FindAll(it => it.ModelId == Modelid);
         }
         return res;
+    }
+
+
+    public List<SysField> GetSysModelLabelInfos(string name)
+    {
+        string[] defaultLabels = { "Id", "Code", "Name" };
+        var res = GetSysFields(name);
+
+        // 使用 LINQ 查询获取 Display 字段为 true 的字段名
+        List<SysField> DisplayFields = res.Where(it => it.Display == true).ToList();
+
+        List<SysField> DefaultFields = res.Where(it => defaultLabels.Contains(it.Name)).ToList();
+        // 如果没有符合条件的字段，使用默认字段
+        if (DisplayFields.Count == 0)
+        {
+            DisplayFields.AddRange(DefaultFields);
+        }
+
+        return DisplayFields;
     }
 
     private static List<dynamic> ToDynamicList(List<Dictionary<string, object>> dictionaryList)

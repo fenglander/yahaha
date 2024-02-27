@@ -10,13 +10,13 @@ public class SelRelObjectQueryDto
     /// <summary>
     /// 关联模型
     /// </summary>
-    public string RelModel { get; set; }
+    public string RelModelName { get; set; }
     /// <summary>
-    /// 关系字段
+    /// 关键词
     /// </summary>
-    public string? RelFieldName { get; set; }
+    public string? Keywords { get; set; }
     /// <summary>
-    /// 关系字段
+    /// 记录数
     /// </summary>
-    public string? RelFieldName2 { get; set; }
+    public int PageSize { get; set; } = 10;
 }

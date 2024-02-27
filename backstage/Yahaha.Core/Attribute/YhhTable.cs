@@ -7,7 +7,7 @@ public class YhhTable : Attribute
 {
     public string Description { get; set; }
     /// <summary>
-    /// 帮助信息
+    /// 排序
     /// </summary>
     public string DefaultOrder { set;get; }
     public YhhTable(string description, string? defaultOrder = "Id")

@@ -79,7 +79,7 @@
 		</el-card>
 		<el-dialog v-model="state.dialogVisible" draggable width="1000px">
 			<template #header>
-				<div style="color: #fff">
+				<div >
 					<el-icon size="16" style="margin-right: 3px; display: inline; vertical-align: middle"> <ele-Document /> </el-icon>
 					<span> 日志详情 </span>
 				</div>

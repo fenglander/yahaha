@@ -7,12 +7,12 @@ import {  PropType,  } from 'vue';
 import yBool from '/@/components/yahaha/formComp/yBool.vue';
 import yText from '/@/components/yahaha/formComp/yText.vue';
 import yTable from '/@/components/yahaha/formComp/yTable.vue';
-import { SysFields } from '/@/api-services/models';
+import { SysField } from '/@/api-services/models';
 
 
 const props = defineProps({
     field: {
-        type: Object as PropType<SysFields>,
+        type: Object as PropType<SysField>,
         required: true,
     },
 })

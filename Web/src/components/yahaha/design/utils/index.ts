@@ -409,6 +409,34 @@ export function objToStringify(obj: any, isBeautify?: boolean) {
   }
 }
 
+/**合并对象 */
+export function mergeObjects(obj1: any, obj2: any): any {
+  // 如果其中一个对象是 undefined，则返回另一个对象
+  if (!obj1) return obj2;
+  if (!obj2) return obj1;
+
+  // 如果其中一个对象是数组，则直接返回合并后的数组
+  if (Array.isArray(obj1) && Array.isArray(obj2)) {
+    return obj1.concat(obj2);
+  }
+
+  // 如果两个对象都不是数组，则递归合并它们的属性
+  if (typeof obj1 === 'object' && typeof obj2 === 'object') {
+    const merged: any = { ...obj1 };
+
+    for (const key in obj2) {
+      if (obj2.hasOwnProperty(key)) {
+        merged[key] = mergeObjects(obj1[key], obj2[key]);
+      }
+    }
+
+    return merged;
+  }
+
+  // 如果两个对象都不是数组也不是对象，则返回 obj2
+  return obj2;
+}
+
 
 
 // provide 方法定义的key

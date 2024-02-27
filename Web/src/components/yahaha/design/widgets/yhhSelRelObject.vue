@@ -59,7 +59,8 @@ const display = computed(() => {
 const remoteMethod = async (query: string) => {
   loading.value = true
   const params = {
-    relModel: props.widgetConfig.RelModelName,
+    relModelName: props.widgetConfig.RelModelName,
+    pageSize:5,
   }
   const res = await selRelObjectQuery(params);
   const temp = res.data.result.filter((it: any) => it[lableName.value].indexOf(query) > -1).map((it: any) => ({

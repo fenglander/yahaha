@@ -1,6 +1,6 @@
 <template>
   <yhhText v-if="readonly" v-model="display"></yhhText>
-  <el-input-number style="width: 100%;" :class="{ 'validateReqFailed': validateReq }" v-model="value" v-else
+  <el-input-number :class="{ 'validateReqFailed': validateReq, 'yhh-input-number': true }" v-model="value" v-else
     :placeholder="config.placeholder" :controls="false" :precision="inputPrecision" />
 </template>
   
@@ -72,9 +72,14 @@ const inputPrecision = computed(() => {
 </script>
   
 <style lang="scss" scoped>
-.el-input-number .el-input__inner {
-  text-align: left;
+.yhh-input-number {
+  width: 100%;
+  :deep(.el-input__inner) {
+    text-align: left;
+  }
+  
 }
+
 
 .validateReqFailed {
   :deep(.el-input__wrapper) {

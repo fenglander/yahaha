@@ -24,6 +24,10 @@ public static class ModelDbManager
         List<long> RetainedModelIds = new List<long>();
         List<long> RetainedFieldIds = new List<long>();
         List<SysField> UpdateFieldInfoRecs = new List<SysField>();
+        List<string> relationalTypes = Enum.GetValues(typeof(RelationalType))
+                                           .Cast<RelationalType>()
+                                           .Select(enumValue => enumValue.ToString())
+                                           .ToList();
         foreach (var entityType in entityTypes)
         {
             var tAtt = entityType.GetCustomAttribute<TenantAttribute>();
@@ -82,6 +86,11 @@ public static class ModelDbManager
                     Field.Display = YhhColumnAttr?.Display != null ? YhhColumnAttr.Display : false;
                     Field.Related = YhhColumnAttr?.Related;
                     Field.OnDelete = YhhColumnAttr?.OnDelete;
+                    
+                    if (Field.Display == true && relationalTypes.Contains(Field.tType)) 
+                    {
+                        throw new Exception(string.Format("模型：{0}，字段：{1}，关系类型字段不能作为标题，请选择字符串类型或其他类型字段。"));
+                    }
                     UpdateFieldInfoRecs.Add(Field);
                 }
             }

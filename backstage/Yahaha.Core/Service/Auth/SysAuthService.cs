@@ -82,7 +82,7 @@ public class SysAuthService : IDynamicApiController, ITransient
         }
 
         // 账号是否存在
-        var Row = DataElement.Search("SysUser").Where("\"Account\" = @account", new { account = input.Account }).ToList();
+        var Row = DataElement.Search("SysUser").Where("Account = @account", new { account = input.Account }).ToList();
         DrillDownDataDto DrillDownParams = new DrillDownDataDto
         {
             model = "SysUser",
@@ -181,6 +181,7 @@ public class SysAuthService : IDynamicApiController, ITransient
 
         return new LoginUserOutput
         {
+            Id = user.Id,
             Account = user.Account,
             RealName = user.RealName,
             Avatar = user.Avatar,

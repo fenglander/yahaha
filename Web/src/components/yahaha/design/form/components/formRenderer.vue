@@ -167,8 +167,9 @@ provide(constblurEvent, async (key: any, item: any, tProp: any) => {
 })
 
 const TrigRelateFieldVals = (key: string) => {
-  const relateFieldList = useSysModel().getRelateFieldList(formDesginData.value?.modelId);
+  const relateFieldList = useSysModel().getRelateFieldList(formDesginData.value?.form.modelId);
   const relate = relateFieldList.filter((item: any) => { return item.relatedKey === key });
+  console.log(relate);
   if (relate.length > 0) {
     relate.forEach((it: any) => {
       let relValue = formValues.value;

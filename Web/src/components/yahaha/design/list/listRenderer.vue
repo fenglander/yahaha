@@ -3,17 +3,15 @@
   <el-card v-loading="paramsLoading" shadow="hover">
     <el-form ref="queryForm" :inline="true">
       <div v-if="showParamsComponent" class="yhh-search-collapse-style">
-        <el-form-item v-for="field in primaryFilterParams" :key="field.name" :label="field.description">
-          <template v-if="!field.default">
-            <y-search-item :field="field" v-model="field.filters" />
-          </template>
+        <el-form-item v-for="field in primaryFilterParams" :key="field.Name" :label="field.Description">
+          <filter-middleware :field="field" v-model="field.filters" />
         </el-form-item>
 
-        <el-collapse v-if="expandSearch" v-model="collapseParam.activeName">
+        <el-collapse v-if="expandSearch" v-model="collapseParam.activeName" @change="changeCollapseFun">
           <el-collapse-item name="1">
-            <el-form-item v-for="field in filterParams" :key="field.name" :label="field.description">
+            <el-form-item v-for="field in filterParams" :key="field.Name" :label="field.Description">
               <template v-if="!field.default">
-                <y-search-item :field="field" v-model="field.filters" />
+                <filter-middleware :field="field" v-model="field.filters" />
               </template>
             </el-form-item>
 
@@ -87,13 +85,15 @@
           <el-button v-if="type !== 5" @click="enterDesign" type="primary" icon="ele-Operation" circle />
           <selectFields v-if="type === 5" v-model="selectedFields" :fields="fields"></selectFields>
           <el-button v-if="type === 5" @click="refreshCurrentTagsView" type="danger" icon="ele-CloseBold" circle />
-          <el-button v-if="type === 5" @click="type = 1" type="success" icon="ele-Select" circle />
+          <el-button v-if="type === 5" @click="saveDesign" type="success" icon="ele-Select" circle />
         </div>
       </el-col>
-      <el-col :span="12"><el-pagination :disabled="type === 5" v-model:currentPage="tableParams.page" v-model:page-size="tableParams.pageSize"
+      <!-- 分页栏 -->
+      <el-col :span="12">
+        <el-pagination v-model:currentPage="tableParams.page" v-model:page-size="tableParams.pageSize"
           :total="tableParams.total" :page-sizes="[10, 20, 50, 100]" small="" background=""
-          @size-change="handleSizeChange" @current-change="handleCurrentChange"
-          layout="total, sizes, prev, pager, next, jumper" /></el-col>
+          @size-change="handleSizeChange" @current-change="handleCurrentChange" :layout="paginationLayout" />
+      </el-col>
     </el-row>
 
     <!-- 个性化组件 -->
@@ -107,47 +107,37 @@
 </template>
 
 <script setup lang="ts">
-import { ref, nextTick, computed, toRaw, watch } from 'vue';
+import { ref, nextTick, computed, watch } from 'vue';
 import formRenderer from '/@/components/yahaha/design/form/components/formRenderer.vue'
 import getWidget from '../widgets/getWidget'
 import selectFields from './components/selectFields.vue';
-import ySearchItem from './search/ySearchItem.vue';
+import filterMiddleware from './filter/middleware.vue';
 import * as api from '/@/api/model/';
+import { userFilterSchemes } from '/@/api/visualDev';
 import { useSysModel } from '/@/stores/sysModel';
+import { useUserInfo } from '/@/stores/userInfo';
 import type { FormList } from '/@/components/yahaha/design/types'
 import { ElNotification } from 'element-plus'
-import { fieldFilter, userFilterSchemes } from '/@/api-services/models';
+import { fieldFilter } from '/@/api-services/models';
 import { debounce } from 'lodash-es';
 import Sortable from 'sortablejs';
-import { isEmptyRoNull, jsonParseStringify, deepClone, readWidgetOptions } from '/@/components/yahaha/design/utils'
-import { evaluateExpression } from '/@/components/yahaha/design/utils/applyFilter'
+import { isEmptyRoNull, jsonParseStringify, deepClone, readWidgetOptions, objToStringify } from '/@/components/yahaha/design/utils'
+import { evaluateExpression, getFieldData } from '/@/components/yahaha/design/utils/applyFilter'
 import mittBus from "/@/utils/mitt";
 import router from '/@/router';
 import { useRoute } from "vue-router";
 const route = useRoute();
 const props = defineProps({
-  modelId: {
+  modelId: Number,//模型Id
+  statusType: { //状态:1.查看,5.设计
     type: Number,
-    required: false,
+    default: 1,
   },
-  statusType:
-  {
-    type: Number,// 1查看；2编辑；5设计
-    required: false,
-    default: () => 1,
-  },
-  formComp: {
-    type: Object,
-    required: false,
-  },
-  listConfig: {
-    type: Object as any,
-    required: false,
-  },
-  formId: {
-    type: Number,
-    required: false,
-  },
+  formComp: Object,//自定义组件组件
+  listConfig: Object,//列表配置
+  formId: Number,//关联表单设计ID
+  desId: Number,//列表设计ID
+  userDesId: Number,//用户自定义配置ID
 });
 const formType = ref(0);
 const designData = ref<any>({
@@ -158,7 +148,7 @@ const curRow = ref<any>({
   id: null,
 });
 const tableRef = ref();
-const filterSchemes = ref<userFilterSchemes[]>([]);
+const filterSchemes = ref<any>();
 const primaryFilterParams = ref<fieldFilter[]>([]);
 const filterParams = ref<fieldFilter[]>([]);
 const listSelected = ref<any>([]);
@@ -176,22 +166,27 @@ const formDrawer = ref({
   editId: "",
 });
 
+const userinfo = ref(useUserInfo().userInfos);
+const model = ref(useSysModel().getSysModelsById(props.modelId));
+/**1：查看，5：设计 */
 const type = ref(props.statusType)
+
+const config = ref(props.listConfig?.config ?? {})
 
 const custComp = computed(() => {
   return props.formComp ? true : false
 });
 
 const displayLineNumbers = computed(() => {
-  return props.listConfig?.config?.displayLineNumbers ?? true;
+  return config.value?.displayLineNumbers ?? true;
 });
 
 const expandSearch = computed(() => {
-  return props.listConfig?.config?.expandSearch ?? true;
+  return config.value?.expandSearch ?? true;
 });
 
 const editable = computed(() => {
-  return props.listConfig?.config?.editable ?? false;
+  return config.value?.editable ?? false;
 });
 
 const primaryFields = ref([] as string[]);
@@ -202,9 +197,10 @@ const queryParams = ref<any>
     model: 0,
     filters: ref<any>
   });
+
 const tableParams = ref({
   page: 1,
-  pageSize: props.listConfig?.config?.pageSize ?? 20,
+  pageSize: config.value?.pageSize ?? 20,
   total: 0,
 });
 
@@ -219,6 +215,33 @@ const enterDesign = () => {
   })
 }
 
+const saveDesign = async () => {
+  type.value = 1;
+  const designData = getListConfig();
+  const params = {
+    model: useSysModel().getSysModels('UserListDesignScheme').Id,
+    data: {
+      UserName: userinfo.value.account,
+      RelUser: { Id: userinfo.value.id, },
+      ModelFull: model.value.FullName,
+      RelModel: model.value,
+      ListDesign: props.desId ? { Id: props.desId } : undefined,
+      DesignData: objToStringify(designData),
+      Default: true,
+      Id: props.userDesId,
+    }
+  }
+  await api.generalSave(params)
+  fetchData();
+}
+
+const paginationLayout = computed(() => {
+  if (type.value === 5) {
+    return "sizes"
+  } else {
+    return "total, sizes, prev, pager, next, jumper"
+  }
+});
 
 const editIndex = ref(0);
 
@@ -235,10 +258,7 @@ const setCurrStatus = (item: any, scope: any) => {
   }
   if (type.value === 1 || !editable.value) {
     temp.readonly = true; // 查看模式，为不可编辑状态
-  } else if ([1, 2].includes(type.value)) {
-    temp.readonly = true; // 编辑模式但只读
   } else if (isCur || type.value === 5) {// 是否当前行
-    temp = jsonParseStringify(item);
     temp.readonly = false;
   } else {
     temp.readonly = true;
@@ -305,10 +325,7 @@ const getDefaultWidget = (info: FormList) => {
 const fields = computed<FormList[]>(() => {
   if (props.modelId) {
     const res: FormList[] = useSysModel().getSysFieldsByModelId(props.modelId).filter((item: any) => item.Description !== null && item.Description.trim() !== "");
-    setFieldStatus(res);
-    res.forEach(it => {
-      getDefaultWidget(it)
-    })
+
     return res
   } else {
     return []
@@ -323,16 +340,6 @@ const listSelectedId = computed(() => {
 const listSelectCount = computed(() => {
   return listSelected.value.length;
 });
-
-/**
- * 读取模型数据
- */
-const getModel = async () => {
-  if (props.modelId) {
-    const res = useSysModel().getSysModelsById(props.modelId);
-    queryParams.value.model = res.Id;
-  }
-};
 
 /**
  * 关闭表单组件
@@ -429,7 +436,6 @@ const Browse = (row: any) => {
 };
 
 const openAdd = () => {
-  curRow.value.Id = undefined;
   curRow.value.id = undefined;
   if (custComp.value) {
     formType.value = 1;
@@ -446,7 +452,6 @@ const columnDrop = () => {
   Sortable.create(wrapperTr, {
     handle: '.move-icon',
     animation: 180,
-    //ghostClass: 'sortable-ghost', //拖拽样式
     onEnd: (evt: any) => {
       let adjustIndex = displayLineNumbers.value ? 2 : 1;
       const oldIndex = evt.oldIndex;  // element's old index within old parent
@@ -481,6 +486,14 @@ const navRoute = () => {
   })
 }
 
+const changeCollapseFun = (val: any) => {
+  if (val.includes("1")) {
+    collapseParam.value.butName = "收起";
+  } else {
+    collapseParam.value.butName = "展开";
+  }
+};
+
 const changeCollapseState = () => {
   if (collapseParam.value.activeName === "") {
     collapseParam.value.activeName = "1";
@@ -491,62 +504,72 @@ const changeCollapseState = () => {
   }
 };
 
-const createfilterParams = () => {
-  // 创建筛选字段信息
-  primaryFilterParams.value = fields.value.filter((item) => item.Name && primaryFields.value.includes(item.Name)).map((item: any) => ({
-    id: item.id,
-    description: item.description,
-    name: item.name,
-    tType: item.tType,
-  })) as fieldFilter[];
-  filterParams.value = fields.value.filter((item) => item.Name && !primaryFields.value.includes(item.Name)).map((item: any) => ({
-    id: item.id,
-    description: item.description,
-    name: item.name,
-    tType: item.tType,
-  })) as fieldFilter[];
-};
-
 const setFilterParams = async (visible: any) => {
   // 上传查询方案
-  if (visible) { return; }
-  createfilterParams();
-  await createUserFilterSchemesDebounce();
+  if (visible || type.value === 5) { return; }
+  await saveUserFilterSchemesDebounce();
 };
 
 const cleanQueryValue = () => {
-  paramsLoading.value = true;
-  loading.value = true;
-  createfilterParams();
-
-  showParamsComponent.value = false;
-  setTimeout(async () => {
-    await fetchData();
-    showParamsComponent.value = true;
-    paramsLoading.value = false;
-  }, 100); // 使用setTimeout来触发重新加载，确保Vue能够正确处理更新
+  refreshCurrentTagsView();
+};
+/**初始化查询字段 */
+const createfilterParams = async (force: boolean = false) => {
+  const filterFields = (items: any[], included: boolean) => {
+    return items
+      .filter((item) => item.Name && !item.Relate)
+      .filter((item) => primaryFields.value.includes(item.Name) === included)
+      .map((item: any) => ({
+        id: item.Id,
+        Description: item.Description,
+        Name: item.Name,
+        tType: item.tType,
+        EnumValue: item.EnumValue,
+        RelModel: item.RelModel,
+      })) as fieldFilter[];
+  };
+  if (primaryFields.value.length === 0 || force) {
+    //查询
+    await getUserFilterSchemes();
+    //区分
+    primaryFilterParams.value = filterFields(fields.value, true);
+    filterParams.value = filterFields(fields.value, false);
+  }
 };
 
-const createUserFilterSchemesDebounce = debounce(
+const getUserFilterSchemes = async () => {
+  const params = {
+    sysModel: props.modelId,
+    listDesign: props.desId ?? 0,
+  }
+  const res = await userFilterSchemes(params);
+  filterSchemes.value = res.data.result;
+  primaryFields.value = JSON.parse(filterSchemes.value?.DefaultFields ?? "[]");
+}
+
+const saveUserFilterSchemesDebounce = debounce(
   async function () {
-    var id = 0;
-    if (filterSchemes.value.length > 0) {
-      id = filterSchemes.value[0].Id;
+    const params = {
+      model: useSysModel().getSysModels('UserFilterScheme').Id,
+      data: {
+        UserName: userinfo.value.account,
+        RelUser: { Id: userinfo.value.id, },
+        ModelFull: model.value.FullName,
+        RelModel: model.value,
+        ListDesign: props.desId ? { Id: props.desId } : undefined,
+        DefaultFields: JSON.stringify(primaryFields.value) as String,
+        Default: true,
+        Id: filterSchemes.value?.Id ?? 0,
+      }
     }
-    var params = {
-      id: id,
-      name: "默认",
-      tableName: props.modelId,
-      modelId: queryParams.value.model,
-      defaultFields: JSON.stringify(primaryFields.value) as String,
-    }
-    var res = await api.createUserFilterSchemes(params);
+    var res = await api.generalSave(params)
     if (res.status === 200) {
       ElNotification({
         title: '成功',
         message: ('查询方案已保存'),
         type: 'success',
       })
+      createfilterParams(true);
     }
   },
   1000
@@ -559,24 +582,26 @@ const refreshCurrentTagsView = () => {
   );
 };
 
-//组合查询条件
-const compParams = () => {
-  const combinedFilters = [...primaryFilterParams.value, ...filterParams.value];
-  combinedFilters.forEach((item: any) => {
-    if (item.filters !== null && item.filters !== undefined) {
-      let tempFilters = item.filters;
-      if (typeof tempFilters === 'string') {
-        tempFilters = [tempFilters];
+/**组合查询条件 */
+const compFilterParams = () => {
+  console.log([...primaryFilterParams.value, ...filterParams.value]);
+  queryParams.value.filters = [...primaryFilterParams.value, ...filterParams.value]
+    .map(item => {
+
+      if (Array.isArray(item.filters)) {
+        item.filters = item.filters.map(filter => {
+          if (typeof filter === 'object' && 'filterExp' in filter) {
+            return typeof filter.filterExp === 'string' ? JSON.parse(filter.filterExp) : filter.filterExp;
+          } else if (typeof filter === 'string' && filter.trim() !== '') {
+            return JSON.parse(filter);
+          }
+          return filter;
+        });
       }
-      item.filters = tempFilters.map((str: any) => {
-        if (typeof str === 'string' && str.length > 0) {
-          return JSON.parse(str);
-        }
-        return str; // 如果已经是对象，直接返回
-      });
-    }
-  });
-  queryParams.value.filters = combinedFilters;
+
+      return item;
+    })
+    .filter(item => item.filters !== undefined && item.filters !== null);
 };
 
 const emptyData = () => {
@@ -594,28 +619,28 @@ const emptyData = () => {
 const listValue = ref<any[]>([]);
 
 const fetchData = async () => {
+  // 设置状态
+  setFieldStatus(selectedFields.value);
+  selectedFields.value.forEach(it => {
+    getDefaultWidget(it)
+  });
+  // 当设计模式下获取空值
   if (type.value === 5) {
     listValue.value = emptyData();
     return;
   }
+  // 开始查询相关
   loading.value = true;
-  await getModel();
-  compParams();
+  queryParams.value.model = props.modelId;
+  await createfilterParams();
+  compFilterParams();
+  console.log(queryParams.value);
   var res = await api.generalListData(Object.assign(queryParams.value, tableParams.value));
   listValue.value = res.data.result?.items ?? [];
   tableParams.value.total = res.data.result?.total;
-  // 读取默认查询字段
-  filterSchemes.value = res.data.result?.userFilterSchemes;
-  if (filterSchemes.value.length > 0) {
-    var defaultuserFilterScheme = toRaw(filterSchemes.value[filterSchemes.value.length - 1]);
-    primaryFields.value = JSON.parse(defaultuserFilterScheme.DefaultFields);
-  }
+
   loading.value = false;
   mainListKey.value++;
-  // 初始化查询条件
-  if (filterParams.value.length === 0) {
-    createfilterParams();
-  }
   toggleSelection()
 };
 
@@ -633,21 +658,62 @@ const handleSizeChange = (val: number) => {
 
 fetchData();
 
+/**只保留有效的设置属性 */
+const filterObjectByPaths = (obj: any) => {
+  let pathList: any[] = ['Name', 'width', 'fixed'];//需要保存的值key
+  const widgetOptions = readWidgetOptions();
+  const curWidgetOptions = widgetOptions.find((item: { name: any; }) => item.name === obj.curWidget);
+  if (curWidgetOptions) {
+    curWidgetOptions.options.forEach((item: any) => {
+      if (item.path) {
+        pathList.push(item.path);
+      }
+      if (item.key) {
+        pathList.push(item.key);
+      }
+    })
+  } else {
+    console.log(obj);
+    throw new Error('未匹配到有效组件');
+  }
+
+  const filteredObject: any = {};
+
+  pathList.forEach(path => {
+    const value = getFieldData(obj, path);
+    if (value) {
+      filteredObject[path] = value;
+    }
+  });
+  // 如果存在 child 属性，则递归调用 filterObjectByPaths 函数进行额外过滤
+  if (obj.child) {
+    filteredObject.child = obj.child.map((item: any) => filterObjectByPaths(item));
+  }
+
+  return filteredObject;
+};
+
 const getListConfig = () => {
+  const tempSelcted = selectedFields.value.map((it: FormList) => {
+    return filterObjectByPaths(it);
+  })
   let temp = {
-    config: { ...props.listConfig.config, pageSize: tableParams.value.pageSize },
-    columns: [...selectedFields.value]
+    config: { ...config.value, pageSize: tableParams.value.pageSize },
+
+    columns: [...tempSelcted]
   }
   return temp
 }
 
 watch(
   () => selectedFields.value,
-  () => {
-    mainListKey.value++;
-    nextTick(() => {
-      columnDrop();
-    })
+  (nval, oval) => {
+    if (nval.length !== oval?.length) {
+      mainListKey.value++;
+      nextTick(() => {
+        columnDrop();
+      })
+    }
   },
   {
     deep: true, immediate: true
@@ -694,14 +760,20 @@ defineExpose({
     padding: 10px 0px;
   }
 
-  .el-form-item--small {
-    margin-bottom: 9px;
-
-  }
-
-  .el-form-item--default {
+  .el-form-item {
+    min-width: 29%;
     margin-bottom: 9px;
   }
+
+  // .el-form-item--default {
+  //   width: 30%;
+  //   margin-bottom: 9px;
+  // }
+
+  // .el-form-item--default {
+  //   width: 30%;
+  //   margin-bottom: 9px;
+  // }
 
   .el-collapse-item__header {
     height: 0px;

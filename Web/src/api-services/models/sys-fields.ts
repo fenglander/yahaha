@@ -10,115 +10,115 @@
 /**
  * 全局返回结果
  * @export
- * @interface SysFields
+ * @interface SysField
  */
-export interface SysFields {
+export interface SysField {
     /**
      * id
      * @type {number}
-     * @memberof SysFields
+     * @memberof SysField
      */
     Id?: number;
     /**
      * 名称
      * @type {string}
-     * @memberof SysFields
+     * @memberof SysField
      */
     Name: string;
     /**
      * 描述
      * @type {string}
-     * @memberof SysFields
+     * @memberof SysField
      */
     Description?: string | null;
     /**
      * 帮助
      * @type {string}
-     * @memberof SysFields
+     * @memberof SysField
      */
     Help?: string | null;
     /**
      * 模型ID
      * @type {number}
-     * @memberof SysFields
+     * @memberof SysField
      */
     Modelid?: number | null;
     /**
      * 数据类型
      * @type {string}
-     * @memberof SysFields
+     * @memberof SysField
      */
     tType: string;
     /**
      * 关系类型
      * @type {string}
-     * @memberof SysFields
+     * @memberof SysField
      */
     Navigattype?: string | null;
     /**
      * 关系字段
      * @type {string}
-     * @memberof SysFields
+     * @memberof SysField
      */
     relfieldname?: string | null;
     /**
      * 关系字段2
      * @type {string}
-     * @memberof SysFields
+     * @memberof SysField
      */
     relfieldname2?: string | null;
     /**
      * 映射类型
      * @type {string}
-     * @memberof SysFields
+     * @memberof SysField
      */
     mappingtype?: string | null;
     /**
      * 映射对象ID1
      * @type {string}
-     * @memberof SysFields
+     * @memberof SysField
      */
     mappingaid?: string | null;
     /**
      * 映射对象ID2
      * @type {string}
-     * @memberof SysFields
+     * @memberof SysField
      */
     mappingbid?: string | null;
     /**
      * 过滤条件
      * @type {string}
-     * @memberof SysFields
+     * @memberof SysField
      */
     wheresql?: string | null;
     /**
      * 创建时间
      * @type {Date}
-     * @memberof SysFields
+     * @memberof SysField
      */
     createtime?: Date | null;
     /**
      * 更新时间
      * @type {Date}
-     * @memberof SysFields
+     * @memberof SysField
      */
     updatetime?: Date | null;
     /**
      * 创建者Id
      * @type {number}
-     * @memberof SysFields
+     * @memberof SysField
      */
     createuserid?: number | null;
     /**
      * 修改者Id
      * @type {number}
-     * @memberof SysFields
+     * @memberof SysField
      */
     updateuserid?: number | null;
     /**
      * 软删除
      * @type {boolean}
-     * @memberof SysFields
+     * @memberof SysField
      */
     isdelete?: boolean | null;
 }
@@ -126,11 +126,13 @@ export interface SysFields {
 
 export interface fieldFilter {
     id: number;
-    name: string;
-    description: string;
+    Name: string;
+    Description: string;
     tType: string;
     filters?: any;
     default: false;
+    EnumValue?: string;
+    RelModel?: any;
 };
 export interface userFilterSchemes {
     Name: string,

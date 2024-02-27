@@ -7,12 +7,17 @@
 // 软件按“原样”提供，不提供任何形式的明示或暗示的保证，包括但不限于对适销性、适用性和非侵权的保证。
 // 在任何情况下，作者或版权持有人均不对任何索赔、损害或其他责任负责，无论是因合同、侵权或其他方式引起的，与软件或其使用或其他交易有关。
 
+using NewLife.Reflection;
 using Newtonsoft.Json.Linq;
+using OfficeOpenXml.FormulaParsing.Excel.Functions.RefAndLookup;
+using System;
 using System.Dynamic;
 using Yahaha.Core.Models;
 using Yahaha.Core.Models.Dto;
 using Yahaha.Core.Models.Entity;
 using Yahaha.Core.Service.Role.Dto;
+using Yahaha.Core.VisualDev.Entity;
+using static COSXML.Model.Tag.DocumentCensorResult;
 
 namespace Yahaha.Core.Service;
 
@@ -130,41 +135,6 @@ public class ModelsService : IDynamicApiController, ITransient
     }
 
     /// <summary>
-    /// 获取用户筛选字段信息
-    /// </summary>
-    /// <param name="model"></param>
-    /// <returns></returns>
-    public List<dynamic> GetUserFilterSchemes(long model)
-    {
-        var query = _de.Search("UserFilterScheme")
-            .Where("\"ModelId\" = @ModelId and \"" + nameof(EntityBase.CreateUser) + "\" = @CreateUserId", new { ModelId = model, CreateUserId = _userManager.UserId })
-            .ToList();
-        return query;
-    }
-
-    /// <summary>
-    /// 创建用户筛选配置
-    /// </summary>
-    /// <param name="input"></param>
-    /// <returns></returns>
-    /// <exception cref="Exception"></exception>
-    [HttpPost("createUserFilterSchemes")]
-    public async Task<int> CreateUserFilterSchemes(UserFilterScheme input)
-    {
-        int res = 0;
-        try
-        {
-            res = await _db.Storageable(input).ExecuteCommandAsync();
-        }
-        catch (Exception ex)
-        {
-            throw new Exception(ex.Message);
-        }
-
-        if (res > 0) { return res; } else { throw new Exception("更新失败"); }
-    }
-
-    /// <summary>
     /// 通用列表数据接口
     /// </summary>
     /// <param name="input"></param>
@@ -172,29 +142,67 @@ public class ModelsService : IDynamicApiController, ITransient
     public async Task<GeneralListRes> GeneralListData(GeneralListDto input)
     {
         var Model = await _sysModel.GetByIdAsync(input.model);
-        var query = _de.Search(Model.Name);
+        var Query = _de.Search(Model.Name, "t1");
         var Fields = _de.GetSysFields(Model.Name);
-        var FilterSchemes = GetUserFilterSchemes(input.model);
-
         if (input.filters != null)
         {
             var FieldFilters = input.filters;
-            var conModels = new List<IConditionalModel>();
-
-            foreach (var field in FieldFilters)
+            var ConModels = new List<IConditionalModel>();
+            foreach (var Filter in FieldFilters)
             {
-                if (field.filters == null) continue;
-                var FieldName = field.name;
-                foreach (var item in field.filters)
+                if (Filter.filters == null) continue;
+                var FieldName = Filter.name;
+                var CSharpTypeName = Filter.tType == nameof(RelationalType.ManyToOne) ? "long" : Filter.tType;
+                var ConditionalModelArray = new JArray();
+                var FieldInfo = _de.GetSysFields().FirstOrDefault(x => x.Id == Filter.id);
+
+                if (Filter.tType == nameof(RelationalType.OneToMany))
+                {
+                    var LabelInfo = _de.GetSysModelLabelInfos(Model.Name).LastOrDefault();
+                    FieldName = LabelInfo.Name;
+                    CSharpTypeName = LabelInfo.tType;
+                }
+
+                foreach (var item in Filter.filters)
                 {
                     if (item == null) continue;
-                    conModels.Add(new ConditionalModel { FieldName = "\"" + FieldName + "\"", ConditionalType = item.conditionalType, FieldValue = item.value, CSharpTypeName = field.tType });
+                    var SubConditionalModelObj = new JObject();
+
+
+                    if (item.conditionalType == ConditionalType.IsNullOrEmpty || item.conditionalType == ConditionalType.IsNot)
+                    {
+                        string StrEsxists = item.conditionalType == ConditionalType.IsNot ? "NOT EXISTS" : "EXISTS";
+                        Query = Query.Where(string.Format("{0} ( SELECT * FROM {1} WHERE ( {2} = t1.id ))", StrEsxists, FieldInfo.RelModel.Name, FieldInfo.Related.ToLower()));
+                        continue;
+                    }
+                    SubConditionalModelObj["FieldName"] = FieldName;
+                    SubConditionalModelObj["FieldValue"] = item.value;
+                    SubConditionalModelObj["ConditionalType"] = (int)item.conditionalType;
+                    SubConditionalModelObj["CSharpTypeName"] = CSharpTypeName;
+                    int WhereType = 0;
+                    ConditionalModelArray.Add(new JObject { { "Key", WhereType }, { "Value", SubConditionalModelObj } });
                 }
+                var finalObj = new JArray { new JObject(new JProperty("ConditionalList", ConditionalModelArray)) };
+                string jsonWithArray = finalObj.ToString();
+                var whereList = _db.Utilities.JsonToConditionalModels(jsonWithArray);
+
+                // 转为EXISTS子查询
+                if (Filter.tType == nameof(RelationalType.OneToMany))
+                {
+                    var SubQuery = _db.Queryable<dynamic>().AS(FieldInfo.RelModel.Name);
+                    var SubSqlStr = SubQuery.Where(whereList).ToSqlString();
+                    Query = Query.Where(string.Format("EXISTS ( {0} AND ( {1} = t1.id ))", SubSqlStr, FieldInfo.Related.ToLower()));
+                }
+                else
+                {
+                    Query = Query.Where(whereList);
+                }
+
+                var sql = Query.ToSqlString();
             }
-            query = query.Where(conModels);
         }
 
-        var Raw = await query.ToPagedListAsync(input.Page, input.PageSize);
+        var Raw = await Query.ToPagedListAsync(input.Page, input.PageSize);
 
         DrillDownDataDto DrillDownParams = new DrillDownDataDto
         {
@@ -215,7 +223,6 @@ public class ModelsService : IDynamicApiController, ITransient
             HasNextPage = Raw.HasNextPage,
             Items = expandoList,
             fields = Fields,
-            userFilterSchemes = FilterSchemes,
         };
         return res;
     }

@@ -134,7 +134,7 @@
 
 		<el-dialog v-model="state.signDialogVisible" draggable width="600px">
 			<template #header>
-				<div style="color: #fff">
+				<div >
 					<el-icon size="16" style="margin-right: 3px; display: inline; vertical-align: middle"> <ele-EditPen /> </el-icon>
 					<span> 电子签名 </span>
 				</div>

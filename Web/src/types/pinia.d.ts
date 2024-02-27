@@ -8,6 +8,7 @@ declare interface UserInfos<T = any> {
 	photo: string;
 	roles: string[];
 	time: number;
+	id: number;
 	userName: string;
 	[key: string]: T;
 }

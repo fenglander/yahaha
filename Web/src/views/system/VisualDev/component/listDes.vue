@@ -35,19 +35,23 @@
                 <el-input v-else v-model="item.value" :placeholder="item.placeholder"
                   @input="tableListAttrChange(item, $event)" :readonly="item.readonly" />
               </el-form-item>
-
+              <el-form-item class="event-btn">
+                <el-button @click="editOpenDrawer('FilterCriteria')">筛选条件
+                </el-button>
+                <el-button @click="editOpenDrawer('afterResponse')">afterResponse
+                </el-button>
+                <el-button @click="editOpenDrawer('beforeDelete')">beforeDelete
+                </el-button>
+              </el-form-item>
             </el-tab-pane>
           </el-tabs>
         </el-form>
       </div>
     </div>
-    <!-- <ace-drawer v-model="drawer.visible" :title="drawer.title" direction="rtl" :content="drawer.content"
-      :code-type="drawer.codeType" @before-close="drawerBeforeClose" /> -->
+    <ace-drawer v-model="drawer.visible" :title="drawer.title" direction="rtl" :content="drawer.content"
+      :code-type="drawer.codeType" @before-close="drawerBeforeClose" />
     <!-- <vue-file ref="vueFileEl" /> -->
-    <el-dialog v-model="showSelectModel" :close-on-click-modal="false" :show-close=false>
-      <template #header="{ titleId, titleClass }">
-        <h6 style="color: white;" :id="titleId" :class="titleClass">选择模型</h6>
-      </template>
+    <el-dialog v-model="showSelectModel" :close-on-click-modal="false" title="选择模型" :show-close=false>
       <select-model v-model="state.sysModel" @clost="props.close"></select-model>
       <template #footer>
         <span>
@@ -61,6 +65,7 @@
 <script setup lang="ts">
 import { reactive, ref, computed } from 'vue'
 import HeadTools from '/@/components/yahaha/design/components/headTools.vue'
+import aceDrawer from '/@/components/yahaha/design/components/aceDrawer.vue'
 import listRenderer from '/@/components/yahaha/design/list/listRenderer.vue'
 import { listAttr } from '/@/components/yahaha/design/list/listAttr'
 import { json2string, objToStringify, stringToObj } from '/@/components/yahaha/design/utils/'
@@ -202,12 +207,22 @@ const headToolClick = (type: string) => {
   }
 }
 
+const editOpenDrawer = (type: string) => {
+  switch (type) {
+    case 'FilterCriteria':
+      // eslint-disable-next-line no-case-declarations
+      const newData = state.listConfig.config || {}
+      dialogOpen(newData[type], { type: type, title: '设置列表的默认筛选条件,处理相同对象存在不同业务界面的情况。格式：[[\'Code\', \'==\', false],\'or\',[\'qty\', \'>\', 0],[CreateUser, \'=\',userId]]  生成的SQL Code == false and (qty>0 or CreateUser = 13000000001) ' })
+      break
+  }
+}
+
 const dialogOpen = (obj: any, params: any = {}) => {
   drawer.visible = true
   Object.assign(drawer, { direction: 'ltr' }, params)
   let editData = objToStringify(obj, true)
   switch (params.type) {
-    case 'dict':
+    case 'FilterCriteria':
       editData = json2string(obj, true)
       break
     case 'beforeRequest':
@@ -225,6 +240,13 @@ const dialogOpen = (obj: any, params: any = {}) => {
       break
   }
   drawer.content = editData
+}
+
+const drawerBeforeClose = () => {
+  drawer.visible = false
+  drawer.content = ''
+  drawer.codeType = ''
+  drawer.title = ''
 }
 
 const saveData = async () => {

@@ -90,7 +90,7 @@ import * as api from '/@/api/model/';
 import { useSysModel } from '/@/stores/sysModel';
 import { useVisualDev } from '/@/stores/visualDev';
 import { ElNotification } from 'element-plus'
-import { SysFields, fieldFilter, userFilterSchemes } from '/@/api-services/models';
+import { SysField, fieldFilter, userFilterSchemes } from '/@/api-services/models';
 import { debounce } from 'lodash-es';
 import { stringToObj } from '/@/components/yahaha/design/utils/form'
 import router from '/@/router';
@@ -123,7 +123,7 @@ const curRow = ref<any>({
 });
 const tableRef = ref();
 const tableData = ref<any>([]);
-const fields = ref<SysFields[]>([]);
+const fields = ref<SysField[]>([]);
 const filterSchemes = ref<userFilterSchemes[]>([]);
 const primaryFilterParams = ref<fieldFilter[]>([]);
 const filterParams = ref<fieldFilter[]>([]);
@@ -395,8 +395,8 @@ const fetchData = async () => {
   tableParams.value.total = res.data.result?.total;
   fields.value = useSysModel().getSysFieldsByModelId(queryParams.value.model).filter((item: any) => item.Description !== null && item.Description.trim() !== "" && item.NavigatType == null)
     .map((item: any) => ({
-      ...item as SysFields,
-    })) as SysFields[];
+      ...item as SysField,
+    })) as SysField[];
 
   // fields.value = res.data.result?.fields.filter((item: any) => item.description !== null && item.description.trim() !== "" && item.navigatType == null)
   //   .map((item: any) => ({

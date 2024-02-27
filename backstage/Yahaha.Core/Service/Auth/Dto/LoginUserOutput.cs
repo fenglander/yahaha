@@ -15,6 +15,10 @@ namespace Yahaha.Core.Service;
 public class LoginUserOutput
 {
     /// <summary>
+    /// 账号ID
+    /// </summary>
+    public long Id { get; set; }
+    /// <summary>
     /// 账号名称
     /// </summary>
     public string Account { get; set; }

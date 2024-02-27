@@ -9,7 +9,6 @@ enum Api {
 	getModelList = '/api/models/modelList',
 	getActionList = '/api/models/actionList',
 	sourceListByFormDesign = '/api/models/sourceListByFormDesign',
-	createUserFilterSchemes = '/api/models/createUserFilterSchemes',
 }
 
 // 通用列表数据
@@ -44,13 +43,6 @@ export const getModelList = (params?: any) =>
 	request({
 		url: Api.getModelList,
 		method: 'get',
-		data: params,
-	});
-/// 设置用户查询方案
-export const createUserFilterSchemes = (params?: any) =>
-	request({
-		url: Api.createUserFilterSchemes,
-		method: 'post',
 		data: params,
 	});
 

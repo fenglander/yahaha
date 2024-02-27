@@ -10,6 +10,7 @@ using Yahaha.Core.Models;
 using Yahaha.Core.Widget.Dto;
 using OfficeOpenXml.FormulaParsing.Excel.Functions.RefAndLookup;
 using Yahaha.Core.Service.Role.Dto;
+using System.Collections;
 
 namespace Yahaha.Core.Widget.Service;
 /// <summary>
@@ -42,11 +43,21 @@ public class WidgetSerivce : IDynamicApiController, ITransient
     /// <returns></returns>
     public List<dynamic> SelRelObjectQuery(SelRelObjectQueryDto input)
     {
-        var Row = _de.Search(input.RelModel).ToList();
+        var Query = _de.Search(input.RelModelName);
+        if(input.Keywords != null)
+        {
+            var lable = _de.GetSysModelLabelInfos(input.RelModelName).LastOrDefault();
+            var conModels = new List<IConditionalModel>
+            {
+                new ConditionalModel { FieldName = lable.Name, ConditionalType = ConditionalType.Like, FieldValue =  input.Keywords}
+            };
+            Query = Query.Where(conModels);
+        }
+         var Row = Query.ToPagedList(1, input.PageSize);
         DrillDownDataDto DrillDownParams = new DrillDownDataDto
         {
-            model = input.RelModel,
-            items = Row,
+            model = input.RelModelName,
+            items = Row.Items.ToList(),
         };
         var res = _de.DrillDownData(DrillDownParams);
         return res.Select(expando => (dynamic)expando).ToList();

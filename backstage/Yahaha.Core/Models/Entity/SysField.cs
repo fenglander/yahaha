@@ -63,7 +63,7 @@ public class SysField : EntityBase
 
     [SugarColumn(ColumnDescription = "关系模型名称")]
     public string? RelModelName { get; set; }
-
+    
     [SugarColumn(ColumnDescription = "关联字段")]
     public bool Relate { get; set; } = false;
 

@@ -1,7 +1,7 @@
 <template>
   <el-button ref="selButRef" type="primary" icon="ele-Tickets" circle v-click-outside="onClickOutside" @click="onClick"/>
 
-  <el-popover :width="341" :visible="popoverVisible" ref="selPopoverRef" :virtual-ref="selButRef" trigger="click"
+  <el-popover popper-class="yhh-popover" :width="341" :visible="popoverVisible" ref="selPopoverRef" :virtual-ref="selButRef" trigger="click"
     :fallback-placements="['bottom', 'top', 'right']" virtual-triggering>
     <el-table ref="selTableRef" :data="fields" :row-key="getRowKey" @select="selectAction"
       @select-all="selectAllAction">
@@ -134,4 +134,9 @@ const selectAllAction = (selection: any) => {
 
 
 </script>
-<style></style>
+<style lang="scss">
+.yhh-popover{
+  height: 500px; 
+  overflow: auto;
+}
+</style>

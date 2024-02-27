@@ -74,7 +74,7 @@
 
 		<el-dialog v-model="state.dialogUploadVisible" :lock-scroll="false" draggable width="400px">
 			<template #header>
-				<div style="color: #fff">
+				<div >
 					<el-icon size="16" style="margin-right: 3px; display: inline; vertical-align: middle"> <ele-UploadFilled /> </el-icon>
 					<span> 上传文件 </span>
 				</div>
