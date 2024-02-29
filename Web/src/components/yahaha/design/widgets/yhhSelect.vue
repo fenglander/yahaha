@@ -1,21 +1,16 @@
 <template>
-  <yhhText v-if="readonly" v-model="value" ></yhhText>
-    <el-select v-model="value"  v-else clearable filterable :placeholder="config.placeholder">
-    <el-option
-      v-for="item in opations"
-      :key="item.value"
-      :label="item.description"
-      :value="item.value"
-    />
+  <yhhText v-if="readonly" v-model="value"></yhhText>
+  <el-select v-model="value" v-else clearable filterable :placeholder="config.placeholder">
+    <el-option v-for="item in opations" :key="item.value" :label="item.description" :value="item.value" />
   </el-select>
 </template>
   
 <script setup lang="ts">
-import {  computed, toRefs } from 'vue';
+import { computed, toRefs } from 'vue';
 import {
   formatNumber
 } from '/@/components/yahaha/design/utils'
-import yhhText  from './yhhText.vue'
+import yhhText from './yhhText.vue'
 const emit = defineEmits(['update:modelValue'])
 
 const props = withDefaults(
@@ -31,12 +26,7 @@ const { modelValue } = toRefs(props);
 
 const value = computed({
   get() {
-    if (modelValue.value) {
-      // 表格和弹性布局
-      return formatNumber(modelValue?.value)
-    } else {
-      return undefined
-    }
+    return formatNumber(modelValue?.value)
   },
   set(newVal: any) {
     emit('update:modelValue', newVal);
@@ -48,8 +38,8 @@ const config = computed(() => {
 })
 
 const opations = computed(() => {
-    // 把字典从字符串转为对象
-    return  JSON.parse(props.widgetConfig.EnumValue) 
+  // 把字典从字符串转为对象
+  return JSON.parse(props.widgetConfig.EnumValue)
 
 })
 
@@ -73,7 +63,7 @@ const readonly = computed(() => {
 </script>
   
 <style lang="scss" scoped>
-  .el-input-number .el-input__inner {
-    text-align: left;
-  }
+.el-input-number .el-input__inner {
+  text-align: left;
+}
 </style>

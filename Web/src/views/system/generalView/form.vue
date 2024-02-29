@@ -1,31 +1,33 @@
 <template>
-  <div v-loading="loading" class="yahaha-form">
-    <div class="head">
-      <span class="title">{{ title }}</span>
-      <el-space>
-        <el-button-group>
-          <el-button v-for="fun in functionList" @click="executeFunc(fun)" :key="fun.Id"> {{ fun.Name }}
-          </el-button>
-        </el-button-group>
+  <el-card v-loading="loading" class="yahaha-form" shadow="hover">
+    <template #header>
+      <div class="card-header">
+        <span class="title">{{ title }}</span>
+        <el-space>
+          <el-button-group>
+            <el-button v-for="fun in functionList" @click="executeFunc(fun)" :key="fun.Id"> {{ fun.Name }}
+            </el-button>
+          </el-button-group>
 
-        <el-button-group>
-          <!-- <el-button type="danger" @click="validate()"> 校验 </el-button> -->
-          <el-button type="primary" v-if="actionType === 3" @click="editFun"> 编辑 </el-button>
-          <el-button type="primary" v-if="actionType === 1 || actionType === 2" @click="saveFun"> 保存 </el-button>
-          <el-button v-if="actionType === 3" @click="cancelFun"> 新建 </el-button>
-          <el-button v-if="actionType === 1 || actionType === 2" @click="cancelFun"> 取消 </el-button>
-          <el-button v-if="id" @click="deleteFun"> 删除 </el-button>
-        </el-button-group>
-      </el-space>
-    </div>
-    <div class="body">
+          <el-button-group>
+            <!-- <el-button type="danger" @click="validate()"> 校验 </el-button> -->
+            <el-button type="primary" v-if="actionType === 3" @click="editFun"> 编辑 </el-button>
+            <el-button type="primary" v-if="actionType === 1 || actionType === 2" @click="saveFun"> 保存 </el-button>
+            <el-button v-if="actionType === 3" @click="cancelFun"> 新建 </el-button>
+            <el-button v-if="actionType === 1 || actionType === 2" @click="cancelFun"> 取消 </el-button>
+            <el-button v-if="id" @click="deleteFun"> 删除 </el-button>
+          </el-button-group>
+        </el-space>
+      </div>
+    </template>
+    <div>
       <formRenderer ref="rendererRef" v-if="loadingComplete" :form-data="designData.formData" :type="actionType"
         :value="tempDataRecs" @change="setDataRecs($event)" />
     </div>
-  </div>
+  </el-card>
 </template>
   
-<script setup lang="ts" name="yForm">
+<script setup lang="ts" name="generalFormView">
 import { ref, reactive, computed } from 'vue';
 import { ElMessage } from 'element-plus'
 import { useRouter, useRoute } from 'vue-router';
@@ -45,7 +47,6 @@ const route = useRoute();
 const query = reactive(router.currentRoute.value.query);
 const currentRoute = reactive(router.currentRoute.value);
 const rendererRef = ref();
-const fields = ref<any>();
 const id = ref<any>();
 const tempDataRecs = ref<any>();
 const dataRecs = ref<any>();
@@ -62,6 +63,10 @@ const visualDev = computed(() => {
   }
 })
 
+const fields = computed(() => {
+  const res = useSysModel().getSysFieldsByModelId(sysModel.value.Id);
+  return res;
+})
 
 const sysModel = computed(() => {
   if (query) {
@@ -109,13 +114,14 @@ const designData = computed(() => {
       }
     }
     let tempList: FormList[] = []
-    sysModel.value.Fields.forEach((it: any) => {
+    fields.value.forEach((it: any) => {
       tempList.push({
         fieldName: it.Name,
         label: it.Description,
         key: key(),
         control: undefined,
-        config: undefined
+        config: undefined,
+        child: it.tType === 'OneToMany' ? it.SubFields.filter((item: any) => item.Name !== it.Related) : undefined
       })
     })
     res.formData.form = tempForm;
@@ -237,7 +243,7 @@ const getDataRecs = async () => {
       tempDataRecs.value = deepClone(res.data.result)
     }
   } else {
-    fields.value = useSysModel().getSysFieldsByModelId(sysModel.value.Id);
+
     let temp: any = {}
     fields.value.forEach((it: any) => {
       temp[it.Name] = null;
@@ -252,23 +258,23 @@ const getDataRecs = async () => {
 getDataRecs()
 </script>
   
-<style scoped>
+<style lang="scss" scoped>
 .yahaha-form {
-  background-color: var(--next-bg-main-color);
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  height: auto;
-  /* 设置高度为 auto，以允许容器根据内容自动扩展 */
-  border-radius: 5px;
-  transition: all 0.9s;
-  border: 1px solid var(--el-border-color);
 
-  .head {
+  width: 100%;
+  height: 100%;
+
+  :deep(.el-card__header) {
+    padding: 10px 25px;
+  }
+
+  .card-header {
     display: flex;
     justify-content: space-between;
-    padding: 8px;
-    border-bottom: 1px solid var(--el-border-color);
+  }
+
+  :deep(.el-card__body) {
+    overflow-y: auto;
   }
 
   .title {
@@ -284,10 +290,6 @@ getDataRecs()
     border-bottom-left-radius: 4px;
     border-bottom-right-radius: 4px;
   }
-}
-
-.yahaha-form:hover {
-  box-shadow: var(--el-box-shadow-light);
 }
 </style>
   

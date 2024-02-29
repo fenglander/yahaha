@@ -169,7 +169,6 @@ provide(constblurEvent, async (key: any, item: any, tProp: any) => {
 const TrigRelateFieldVals = (key: string) => {
   const relateFieldList = useSysModel().getRelateFieldList(formDesginData.value?.form.modelId);
   const relate = relateFieldList.filter((item: any) => { return item.relatedKey === key });
-  console.log(relate);
   if (relate.length > 0) {
     relate.forEach((it: any) => {
       let relValue = formValues.value;
@@ -188,30 +187,31 @@ const TrigRelateFieldVals = (key: string) => {
 
 }
 
-const setFieldStatus = (data: FormList[]) => {
+const setFieldStatus = (data: FormList[], ExceptionField: any[] = []) => {
   if (props.type === 5 || props.type === 3) { return; }
   data.forEach((it: FormList) => {
     it.origReadonly = false;
     it.origRequired = false;
     it.origInvisible = false;
+    if (ExceptionField.includes(it.Name)) { return; }
     if (it.Relate || it.Name === 'Id') {
       it.origReadonly = true;
     }
     else if (it.readonlyExp) {
-      it.origReadonly = evaluateExpression(formValues.value,it.readonlyExp)
+      it.origReadonly = evaluateExpression(formValues.value, it.readonlyExp)
     }
     if (it.invisibleExp) {
-      it.origInvisible = evaluateExpression(formValues.value,it.invisibleExp)
+      it.origInvisible = evaluateExpression(formValues.value, it.invisibleExp)
     }
     if (it.NotNull && it.Name !== 'Id') {
       it.origRequired = true
     }
     else if (it.requiredExp) {
-      it.origRequired = evaluateExpression(formValues.value,it.requiredExp)
+      it.origRequired = evaluateExpression(formValues.value, it.requiredExp)
     }
 
     if (it.child && it.child.length > 0) {
-      setFieldStatus(it.child)
+      setFieldStatus(it.child, [it.Related])
     }
     if (it.list) {
       setFieldStatus(it.list)
@@ -285,15 +285,18 @@ const ruleForm = ref()
 const validate = () => {
   let validateInfo = [] as any[];
   formDesginData.value?.list.forEach((it: any) => {
-    if (it.origRequired && !formValues.value[it.Name]) {
+    if (it.origRequired && [null, undefined, '', 0, []].includes(formValues.value[it.Name])) {
       validateInfo.push({ 'Lable': it.label, 'Name': it.Name })
     }
     if (it.child && it.child.length > 0) {
       const childValue = formValues.value[it.Name];
       const reqPropertyNames = it.child.filter((t: any) => t.origRequired).map((t: any) => t.Name)
+      if ([null, undefined, '', 0, []].includes(childValue) && reqPropertyNames.length > 0) {
+        validateInfo.push({ 'Lable': it.label, 'Name': it.Name })
+      }
       let emptyIndexes: number[] = [];
       childValue.forEach((data: any, index: number) => {
-        const isEmpty = reqPropertyNames.some((name: any) => data[name] === null || data[name] === undefined || data[name] === '');
+        const isEmpty = reqPropertyNames.some((name: any) => [null, undefined, '', 0, []].includes(data[name]));
         if (isEmpty) {
           emptyIndexes.push(index + 1);
         }
@@ -304,7 +307,7 @@ const validate = () => {
     }
     if (it.list && it.list.length > 0) {
       it.list.forEach((t: any) => {
-        if (t.origRequired && !formValues.value[t.Name]) {
+        if (t.origRequired && [null, undefined, '', 0, []].includes(formValues.value[t.Name])) {
           validateInfo.push({ 'Lable': it.label, 'Name': it.Name })
         }
       })
@@ -340,8 +343,7 @@ const setValue = (obj: { [key: string]: any }) => {
 const setDesginData = (obj: any) => {
   let temp = Object.assign({}, jsonParseStringify(obj))
   matchFieldInfo(temp.list);
-  setFieldStatus(temp.list)
-  console.log(temp)
+  setFieldStatus(temp.list);
   formDesginData.value = temp;
 }
 

@@ -242,7 +242,7 @@ public class ModelsService : IDynamicApiController, ITransient
         var query = _de.Search(Model.Name);
         var conModels = new List<IConditionalModel>
         {
-            new ConditionalModel { FieldName = "\"Id\"", ConditionalType = ConditionalType.Equal, FieldValue = input.id.ToString(), CSharpTypeName="long" }
+            new ConditionalModel { FieldName = "Id", ConditionalType = ConditionalType.Equal, FieldValue = input.id.ToString(), CSharpTypeName="long" }
         };
         query = query.Where(conModels);
 

@@ -51,6 +51,11 @@ public abstract class EntityBase : EntityBaseId
     public SysUser? UpdateUser { get; set; }
 }
 
+public abstract class VirtualBase
+{
+
+}
+
 /// <summary>
 /// 业务数据实体基类(数据权限)
 /// </summary>

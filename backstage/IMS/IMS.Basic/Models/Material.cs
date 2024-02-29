@@ -3,10 +3,10 @@
     [YhhTable("料品档案")]
     public class Material : EntityBase
     {
-        [YhhColumn(ColumnDescription = "编码")]
+        [YhhColumn(ColumnDescription = "编码", Display = true)]
         public string? Code { get; set; }
 
-        [YhhColumn(ColumnDescription = "名称", Display = true)]
+        [YhhColumn(ColumnDescription = "名称")]
         public string? Name { get; set; }
 
         [YhhColumn(ColumnDescription = "规格")]

@@ -30,7 +30,6 @@ public static class ModelDbManager
                                            .ToList();
         foreach (var entityType in entityTypes)
         {
-            var tAtt = entityType.GetCustomAttribute<TenantAttribute>();
             var TableAttr = entityType.GetCustomAttribute<SugarTable>();
             var YhhTableAttr = entityType.GetCustomAttribute<YhhTable>();
 
@@ -38,7 +37,7 @@ public static class ModelDbManager
             Model.Name =  entityType.Name;
             Model.FullName = entityType.FullName;
             Model.Description = YhhTableAttr != null ? YhhTableAttr?.Description : TableAttr?.TableDescription;
-            Model.IsTenant = tAtt != null;
+            Model.IsVirtual = entityType.IsSubclassOf(typeof(VirtualBase));
             Model.CreateUser = null;
 
             List<SysModel> ExistCurRecs = ExistModelRecs.Where(it => it.FullName == Model.FullName).ToList();

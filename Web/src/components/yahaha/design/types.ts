@@ -48,6 +48,7 @@ export interface FormList {
   child?: any // 子表字段
   RelModel?: any // 关联字段
   label?:string//标题
+  Related?:string
 }
 
 export interface widgetConfig {

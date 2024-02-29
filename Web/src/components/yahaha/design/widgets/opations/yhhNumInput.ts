@@ -1,6 +1,6 @@
 export const name = 'yhhNumInput'
 export const description = '数字输入框'
-export const fieldType = ['Int32', 'Int64', 'Double', 'Single']
+export const fieldType = ['Int32', 'Int64', 'Double', 'Single', 'Single', 'Decimal']
 export const options = [{
   key: 'placeholder',
   label: '占位字符串',

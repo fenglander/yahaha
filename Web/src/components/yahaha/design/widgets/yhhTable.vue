@@ -10,8 +10,8 @@
         </el-tooltip>
       </template>
       <template #default="scope">
-        <component :is="curWidget(item.curWidget)" @blur="blurEvent" :widgetConfig="setCurrStatus(item, scope)" v-model="scope.row[item.Name]"
-           />
+        <component :is="curWidget(item.curWidget)" @blur="blurEvent" :widgetConfig="setCurrStatus(item, scope)"
+          v-model="scope.row[item.Name]" />
       </template>
     </el-table-column>
     <el-table-column v-if="!readonly" prop="action" label="操作" fixed="right">
@@ -180,7 +180,7 @@ const addRow = () => {
     const temp: any = {}
     config.value.child.forEach((item: any) => {
       if (item.Name) {
-        temp[item.Name] = item.control.modelValue
+        temp[item.Name] = null;
       }
     })
 
@@ -221,6 +221,7 @@ watch(
       }
       const tempAddIndex = temp.map((item: any, index: any) => ({ ...item, index }));
       childData.value = tempAddIndex;
+      updateModelValue(tempAddIndex);//首次返回
     }
   },
   {

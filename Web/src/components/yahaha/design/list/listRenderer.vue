@@ -307,6 +307,9 @@ const getDefaultWidget = (info: FormList) => {
           (item.fieldType.includes(info.tType as string))
         );
     });
+    if(!filteredItem){
+      throw new Error(`No Component Match for Field ${info.Name}`)
+    }
     info.curWidget = filteredItem.name;
     if (!info.config) {
       info.config = {};
@@ -584,7 +587,6 @@ const refreshCurrentTagsView = () => {
 
 /**组合查询条件 */
 const compFilterParams = () => {
-  console.log([...primaryFilterParams.value, ...filterParams.value]);
   queryParams.value.filters = [...primaryFilterParams.value, ...filterParams.value]
     .map(item => {
 
@@ -634,7 +636,6 @@ const fetchData = async () => {
   queryParams.value.model = props.modelId;
   await createfilterParams();
   compFilterParams();
-  console.log(queryParams.value);
   var res = await api.generalListData(Object.assign(queryParams.value, tableParams.value));
   listValue.value = res.data.result?.items ?? [];
   tableParams.value.total = res.data.result?.total;

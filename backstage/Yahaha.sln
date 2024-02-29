@@ -48,7 +48,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "IMS", "IMS", "{79483F31-6F4
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IMS.Basic", "IMS\IMS.Basic\IMS.Basic.csproj", "{5A34CEC6-5E5C-4B18-8593-7B2B0C4621EB}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IMS.Manufacturing", "IMS.Manufacturing\IMS.Manufacturing.csproj", "{D3F9C5E1-E1AA-4076-B4FE-6C5329FF0A49}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IMS.Manufacturing", "IMS.Manufacturing\IMS.Manufacturing.csproj", "{D3F9C5E1-E1AA-4076-B4FE-6C5329FF0A49}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

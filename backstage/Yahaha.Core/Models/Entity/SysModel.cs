@@ -25,8 +25,8 @@ public class SysModel:EntityBase
     [YhhColumn(ColumnDescription = "信息")]
     public string? Info { get; set; }
 
-    [YhhColumn(ColumnDescription = "启用租户")]
-    public bool IsTenant { get; set; }
+    [YhhColumn(ColumnDescription = "虚拟")]
+    public bool IsVirtual { get; set; }
 
     [YhhColumn(ColumnDescription = "字段", RelationalType = RelationalType.OneToMany, Related = "SysModel")]
     public List<SysField> Fields { get; set; }

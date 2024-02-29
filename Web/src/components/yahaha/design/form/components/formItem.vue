@@ -84,14 +84,9 @@ const itemInfo = computed({
 const getDefaultWidget = (info: FormList) => {
   if ([null, undefined, 0, ''].includes(info.widget)) {
     const widget = readWidgetOptions()
-    const filteredItem: any = widget.find(item => {
-      if (item.fieldType.includes('*')) {
-        return true
-      }
-      else {
-        return item.fieldType.includes(info.tType as string)
-      }
-    });
+    const filteredItem: any = widget
+      .sort((a, b) => (a.isLayout === b.isLayout ? 0 : a.isLayout ? -1 : 1))
+      .find(item => item.fieldType.includes(info.tType as string));
     info.curWidget = filteredItem.name;
     if (!info.config) {
       info.config = {};

@@ -4,7 +4,7 @@
     </div>
 </template>
     
-<script setup lang="ts" name="generalView">
+<script setup lang="ts" name="generalListView">
 import { ref, reactive, onMounted, computed } from 'vue';
 import listRenderer from '/@/components/yahaha/design/list/listRenderer.vue'
 import { formatNumber, mergeObjects, stringToObj } from '/@/components/yahaha/design/utils/'

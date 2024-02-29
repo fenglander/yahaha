@@ -17,6 +17,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\IMS.Manufacturing\IMS.Manufacturing.csproj" />
     <ProjectReference Include="..\IMS\IMS.Basic\IMS.Basic.csproj" />
     <ProjectReference Include="..\UT.APS\UT.APS.csproj" />
     <ProjectReference Include="..\Yahaha.Application\Yahaha.Application.csproj" />
