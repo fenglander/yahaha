@@ -1,10 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿namespace Yahaha.Core;
 
-namespace Yahaha.Core;
 [AttributeUsage(AttributeTargets.Method, Inherited = true)]
 public class YhhTrigger : Attribute
 {
@@ -20,5 +15,4 @@ public class YhhTrigger : Attribute
     {
         this.FieldName = name;
     }
-
 }

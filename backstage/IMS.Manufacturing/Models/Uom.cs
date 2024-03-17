@@ -1,4 +1,4 @@
-﻿namespace IMS.Basic.Models;
+﻿namespace IMS.Manufacturing.Models;
 
 public enum UomType
 { Reference, Bigger, Smaller };
@@ -9,7 +9,10 @@ public class Uom : EntityBase
     [YhhColumn(ColumnDescription = "名称", Display = true, NotNull = true)]
     public string Name { get; set; }
 
-    [YhhColumn(ColumnDescription = "分类",RelationalType = RelationalType.ManyToOne)]
+    [YhhColumn(ColumnDescription = "编号")]
+    public string Code { get; set; }
+
+    [YhhColumn(ColumnDescription = "分类", RelationalType = RelationalType.ManyToOne)]
     public UomCategory Category { get; set; }
 
     [YhhColumn(ColumnDescription = "精度")]
@@ -24,11 +27,11 @@ public class Uom : EntityBase
     public UomType UomType { get; set; }
 
     [YhhColumn(ColumnDescription = "比率")]
-    public long? Ratio { get; set; }
+    public double? Ratio { get; set; }
 
     [YhhColumn(ColumnDescription = "活动")]
     public bool? Active { get; set; }
 
     [YhhColumn(ColumnDescription = "外部标识")]
-    public string? ExternalSysId { get; set; }
+    public string? ExternalId { get; set; }
 }

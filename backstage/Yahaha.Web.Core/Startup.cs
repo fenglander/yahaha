@@ -20,12 +20,14 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using OnceMi.AspNetCore.OSS;
+using SqlSugar;
 using System;
 using System.IO;
 using System.Net;
 using System.Net.Mail;
 using Yahaha.Core;
 using Yahaha.Core.Ldap;
+using Yahaha.Core.Models;
 using Yahaha.Core.Service;
 using Yitter.IdGenerator;
 

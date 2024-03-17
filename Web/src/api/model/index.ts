@@ -9,6 +9,9 @@ enum Api {
 	getModelList = '/api/models/modelList',
 	getActionList = '/api/models/actionList',
 	sourceListByFormDesign = '/api/models/sourceListByFormDesign',
+	getModelTitle = '/api/models/modelTitle',
+	getModelEmptyData = '/api/models/ModelEmptyData',
+	
 }
 
 // 通用列表数据
@@ -69,6 +72,20 @@ export const getActionList = (params?: any) =>
 		method: 'get',
 	});
 
+/**获取模型标题 */
+export const getModelTitle = (params?: any) =>
+	request({
+		url: Api.getModelTitle,
+		method: 'post',
+		data: params,
+	});
+/**获取模型空记录 */
+export const getModelEmptyData = (params?: any) =>
+	request({
+		url: Api.getModelEmptyData,
+		method: 'get',
+		data: params,
+	});
 export const uploadUrl = (params?: any) =>
 	request({
 		url: Api.generalFormData,

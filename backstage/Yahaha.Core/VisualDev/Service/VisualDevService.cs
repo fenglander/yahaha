@@ -84,7 +84,7 @@ public class VisualDevService : IDynamicApiController, ITransient
         long res;
         try
         {
-            res = _de.AddElseUpdate(input);
+            res = (long)_de.AddElseUpdate(input)["Id"];
         }
         catch (Exception ex)
         {
@@ -104,7 +104,7 @@ public class VisualDevService : IDynamicApiController, ITransient
         long res;
         try
         {
-            res = _de.AddElseUpdate(input);
+            res = (long)_de.AddElseUpdate(input)["Id"];
         }
         catch (Exception ex)
         {

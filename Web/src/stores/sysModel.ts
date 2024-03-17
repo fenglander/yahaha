@@ -41,16 +41,25 @@ export const useSysModel = defineStore('sysmodel', {
 			const sysActionList = toRaw(this.sysActionList);
 			return sysActionList.filter((it: any) => it.BindingModel.Id === id)
 		},
-		getSysModelsById(Id: any): any {
-			Id = Number(Id);
+		getSysModelsById(id: any): any {
+			id = Number(id);
 			const sysModelList = toRaw(this.sysModelList);
 			let res;
 			sysModelList.forEach((it: any) => {
-				if (it.Id === Id) { res = it; return; }
+				if (it.Id === id) { res = it; return; }
 			})
 			return res
 		},
-
+		async getSysModelEmptyDataById(id: any): Promise<any> {
+			id = Number(id);
+			let res = await api.getModelEmptyData({ model: id });
+			res = res.data?.result ?? null;
+			return res
+		},
+		async getSysModelEmptyData(name: any): Promise<any> {
+			const sysModel = this.sysModelList.find((it: any) => { it.Name === name });
+			return await this.getSysModelEmptyDataById(sysModel.Id)
+		},
 		getSysModelLables(name: any): any {
 			const Default = ["Id", "Code", "Name"]
 			let DisplayFields: string[] = [];

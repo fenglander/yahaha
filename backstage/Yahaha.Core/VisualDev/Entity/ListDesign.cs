@@ -1,12 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Yahaha.Core.Models.Entity;
+﻿using Yahaha.Core.Models.Entity;
 
 namespace Yahaha.Core.VisualDev;
-
 
 /// <summary>
 /// 可视化开发功能实体
@@ -43,16 +37,19 @@ public class ListDesign : EntityBase
 
     [YhhColumn(ColumnDescription = "模型ID")]
     public long? ModelId { get; set; }
+
     /// <summary>
     /// 模型
     /// </summary>
-    [YhhColumn(ColumnDescription = "模型",RelationalType = RelationalType.ManyToOne)]
+    [YhhColumn(ColumnDescription = "模型", RelationalType = RelationalType.ManyToOne)]
     public SysModel SysModel { get; set; }
+
     /// <summary>
     /// 类名称
     /// </summary>
     [SugarColumn(ColumnDescription = "类名称")]
     public string? ModelFullName { get; set; }
+
     /// <summary>
     /// 列表配置JSON
     /// </summary>

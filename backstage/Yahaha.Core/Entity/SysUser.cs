@@ -297,4 +297,6 @@ public class SysUser : EntityTenant
     [SugarColumn(ColumnDescription = "电子签名", Length = 512)]
     [MaxLength(512)]
     public string? Signature { get; set; }
+
+    public override string ModelTitle => this.RealName;
 }

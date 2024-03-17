@@ -1,4 +1,4 @@
-﻿namespace IMS.Basic.Models;
+﻿namespace IMS.Manufacturing.Models;
 
 [YhhTable("单位分类")]
 public class UomCategory : EntityBase
@@ -6,9 +6,9 @@ public class UomCategory : EntityBase
     [YhhColumn(ColumnDescription = "名称", Display = true)]
     public string Name { get; set; }
 
-    [YhhColumn(ColumnDescription = "活动")]
-    public bool? Active { get; set; }
+    [YhhColumn(ColumnDescription = "编号")]
+    public string Code { get; set; }
 
     [YhhColumn(ColumnDescription = "外部标识")]
-    public string? ExternalSysId { get; set; }
+    public string? ExternalId { get; set; }
 }

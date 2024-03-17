@@ -1,11 +1,9 @@
-// 麻省理工学院许可证
-//
-// 版权所有 (c) 2021-2023 zuohuaijun，大名科技（天津）有限公司  联系电话/微信：18020030720  QQ：515096995
-//
-// 特此免费授予获得本软件的任何人以处理本软件的权利，但须遵守以下条件：在所有副本或重要部分的软件中必须包括上述版权声明和本许可声明。
-//
-// 软件按“原样”提供，不提供任何形式的明示或暗示的保证，包括但不限于对适销性、适用性和非侵权的保证。
-// 在任何情况下，作者或版权持有人均不对任何索赔、损害或其他责任负责，无论是因合同、侵权或其他方式引起的，与软件或其使用或其他交易有关。
+
+using Nest;
+using OfficeOpenXml.FormulaParsing.Excel.Functions.Text;
+using Yahaha.Core.Entity;
+using Yahaha.Core.Models;
+using static SKIT.FlurlHttpClient.Wechat.Api.Models.ComponentTCBBatchCreateContainerServiceVersionRequest.Types;
 
 namespace Yahaha.Core;
 
@@ -19,6 +17,14 @@ public abstract class EntityBaseId
     /// </summary>
     [SugarColumn(ColumnDescription = "Id", IsPrimaryKey = true, IsIdentity = false)]
     public virtual long Id { get; set; }
+
+    public virtual string? ModelTitle
+    {
+        get
+        {
+            return this.Id.ToString();
+        }
+    }
 }
 
 /// <summary>
@@ -49,11 +55,22 @@ public abstract class EntityBase : EntityBaseId
     /// </summary>
     [YhhColumn(ColumnDescription = "修改者", RelationalType = RelationalType.ManyToOne)]
     public SysUser? UpdateUser { get; set; }
+    /// <summary>
+    /// ORM指令，用于判断如何处理OneToMany,ManyToMany字段，其他情况不起作用
+    /// </summary>
+    [YhhColumn(ColumnDescription = "ORM指令", IsIgnore = true)]
+    public ORMCommandEnum ORMCommand { get; set; }
 }
+
 
 public abstract class VirtualBase
 {
+}
 
+
+public interface ModelAction<T> where T : class, new()
+{
+    List<T>? Rec { get; set; }
 }
 
 /// <summary>
@@ -91,3 +108,13 @@ public abstract class EntityTenantId : EntityBaseId, ITenantIdFilter
     [SugarColumn(ColumnDescription = "租户Id", IsOnlyIgnoreUpdate = true)]
     public virtual long? TenantId { get; set; }
 }
+
+public abstract class EntityCompany : EntityBase, ICompanyFilter
+{
+    /// <summary>
+    /// 公司
+    /// </summary>
+    [YhhColumn(ColumnDescription = "公司", RelationalType = RelationalType.ManyToOne)]
+    public virtual SysCompany? Company { get; set; }
+}
+

@@ -1,15 +1,17 @@
 <template>
-  <yhhText v-if="readonly" v-model="display" ></yhhText>
-  <el-select style="width: 100%;" v-model="value" v-else clearable filterable remote :remote-method="remoteMethod" :loading="loading">
+  <yhhText v-if="readonly" v-model="display"></yhhText>
+  <el-select style="width: 100%;" v-model="value" v-else clearable filterable remote :remote-method="remoteMethod"
+    :loading="loading">
     <el-option v-for="item in options" :key="item.id" :label="item.description" :value="item.id" />
   </el-select>
 </template>
 
 <script setup lang="ts">
 import { computed, toRefs, ref, watch } from 'vue';
-import {formatNumber, deepClone
+import {
+  formatNumber, deepClone
 } from '/@/components/yahaha/design/utils'
-import yhhText  from './yhhText.vue'
+import yhhText from './yhhText.vue'
 import { selRelObjectQuery } from '/@/api/widget';
 import { useSysModel } from '/@/stores/sysModel';
 const emit = defineEmits(['update:modelValue'])
@@ -36,7 +38,7 @@ const value = computed({
   },
   set(newVal: any) {
     let temp = null;
-    if(newVal){
+    if (newVal) {
       const result = options.value.find((item: any) => item.id === newVal);
       temp = result.value
     }
@@ -60,13 +62,14 @@ const remoteMethod = async (query: string) => {
   loading.value = true
   const params = {
     relModelName: props.widgetConfig.RelModelName,
-    pageSize:5,
+    pageSize: 5,
+    keywords: query,
   }
   const res = await selRelObjectQuery(params);
-  const temp = res.data.result.filter((it: any) => it[lableName.value].indexOf(query) > -1).map((it: any) => ({
+  const temp = res.data.result.map((it: any) => ({
     value: it,
     id: it.Id,
-    description: it[lableName.value]
+    description: it.ModelTitle
   }))
   options.value = deepClone(temp);
   loading.value = false
@@ -77,7 +80,7 @@ const init = () => {
     const temp = {
       value: modelValue?.value,
       id: modelValue?.value.Id,
-      description: modelValue?.value[lableName.value]
+      description: modelValue?.value.ModelTitle
     }
     options.value.push(temp)
   }

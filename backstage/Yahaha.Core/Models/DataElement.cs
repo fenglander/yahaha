@@ -1,5 +1,6 @@
 ﻿using AngleSharp.Text;
 using Newtonsoft.Json.Linq;
+using RazorEngine.Compilation.ImpromptuInterface.Dynamic;
 using System.Dynamic;
 using Yahaha.Core.Models.Entity;
 using Yahaha.Core.Service.Role.Dto;
@@ -16,7 +17,7 @@ public class DataElement
         _db = db;
     }
 
-    public ISugarQueryable<dynamic> Search(string Model,string? ShortName = "")
+    public string GetSearchColumns(string Model)
     {
         List<string> relationalTypes = Enum.GetValues(typeof(RelationalType))
                                            .Cast<RelationalType>()
@@ -27,19 +28,33 @@ public class DataElement
         var Fields = GetSysFields(Model).Where(u => !relationalTypes.Contains(u.tType) && !u.Relate);
         List<string> FieldNames = Fields
             .Select(it => string.Format("\"{0}\" as \"{1}\" ", it.Name.ToLower(), it.Name)).ToList();
-        string columns = string.Join(", ", FieldNames);
-        //string sql = string.Format("select {0} from {1} ", columns, Model);
+        return string.Join(", ", FieldNames);
+    } 
 
-        //_db.Queryable<dynamic>().AS(Model);
+    public ISugarQueryable<dynamic> Search(string ModelTableName, string? ShortName = "")
+    {
+        var columns = GetSearchColumns(ModelTableName);
+        var Model = GetSysModels(null, ModelTableName).FirstOrDefault();
 
-        var query = _db.Queryable<dynamic>().AS(Model,ShortName).Select(columns).OrderBy("Id");
+        var query = _db.Queryable<dynamic>().AS(ModelTableName, ShortName).Select(columns);
+        if (Model != null && !string.IsNullOrEmpty(Model.DefaultSort))
+        {
+            query = query.OrderBy(Model.DefaultSort);
+        }
         return query;
     }
 
-    public ISugarQueryable<dynamic> Search<T>() where T : new()
+    public ISugarQueryable<T> Search<T>(string? ShortName = "") where T : new()
     {
         string typeName = typeof(T).Name;
-        return Search(typeName);
+        var Model = GetSysModels(null, typeName).FirstOrDefault();
+        var Columns = GetSearchColumns(typeName);
+        var query = _db.Queryable<T>().AS(typeName, ShortName).Select(Columns);
+        if(Model != null && !string.IsNullOrEmpty(Model.DefaultSort))
+        {
+            query = query.OrderBy(Model.DefaultSort);
+        }
+        return query;
     }
 
     public int Delete<T>(List<T> DeteleObjs)
@@ -70,12 +85,12 @@ public class DataElement
         return _db.Deleteable<object>().AS(Model).WhereColumns(updateObjList).ExecuteCommand();
     }
 
-    public long Update(string Model, Dictionary<string, object> UpdateObj)
+    public Dictionary<string, object> Update(string Model, Dictionary<string, object> UpdateObj)
     {
-        var dt = MatchingValue(Model, UpdateObj);
+        var dt = MatchingValue(Model, UpdateObj, 2);
         _db.Updateable(dt).AS(Model).WhereColumns("Id").ExecuteCommand();
 
-        return (long)dt["Id"];
+        return dt;
     }
 
     public void DrillDownDel(string Model, Dictionary<string, object> Obj)
@@ -92,16 +107,22 @@ public class DataElement
             }
         }
     }
-
-    public Dictionary<string, object> MatchingValue(string Model, Dictionary<string, object> Obj)
+    /// <summary>
+    /// 匹配数据生成SQL参数值
+    /// </summary>
+    /// <param name="Model">模型名</param>
+    /// <param name="Obj">数据</param>
+    /// <param name="OpType">操作类型1：新增，2：修改</param>
+    /// <returns></returns>
+    public Dictionary<string, object> MatchingValue(string Model, Dictionary<string, object> Obj, int OpType)
     {
         var Fields = GetSysFields(Model).FindAll(it => it.Name != "Id");
         var dt = new Dictionary<string, object>();
         Dictionary<string, object> Delted = new Dictionary<string, object>();
-        bool IsUpdate = Obj.ContainsKey("Id") && Obj["Id"] != null && long.TryParse(Obj["Id"].ToString(), out long id) && id != 0;
+        bool IsUpdate = OpType == 2;
         if (!IsUpdate)
         {
-            id = SnowFlakeSingle.Instance.NextId();
+            long id = SnowFlakeSingle.Instance.NextId();
             if (dt.ContainsKey("Id")) { dt["Id"] = id; } else { dt.Add("Id", id); }
         }
         else
@@ -127,6 +148,9 @@ public class DataElement
             var Field = Fields[i];
             dynamic Value;
             dynamic DelValue;
+            // 需要忽略
+            if (Field.Relate == true) { continue; }
+            if (IsUpdate && Field.IsOnlyIgnoreUpdate == true) { continue; }
             // 获取新值
             if (Obj.TryGetValue(Field.Name, out var val)) { Value = val; } else { Value = null; }
             // 校验必填
@@ -138,10 +162,6 @@ public class DataElement
             if (IsUpdate && Delted.TryGetValue(Field.Name, out var delVal)) { DelValue = delVal; } else { DelValue = null; }
             // 对空值的处理
             var NumType = new string[] { "Int64", "Int32", "Double", "Select" };
-            if (Field.Relate == true)
-            {
-                continue;
-            }
             if (Field.tType == "Boolean" && (Value == null || string.IsNullOrEmpty(Value.ToString())))
             {
                 Value = false;
@@ -161,7 +181,9 @@ public class DataElement
                 {
                     if (Field.tType == "OneToMany")
                     {
-                        List<Dictionary<string, object>> resultList = ToDictionaryList(Value);
+                        if (Value != null && !string.IsNullOrEmpty(Value.ToString()))
+                            continue;
+                        List<Dictionary<string, object>> resultList = Value != null ? ToDictionaryList(Value) : new List<Dictionary<string, object>>();
                         for (int it = 0; it < resultList.Count; it++)
                         {   // 绑定主表
                             if (Field.tType == "Int64")
@@ -218,7 +240,6 @@ public class DataElement
             else if (Field.Name == "CreateTime")
             {
                 Value = IsUpdate && Value == null ? DelValue : DateTime.Now;
-
             }
             else if (!IsUpdate && Field.Name == "CreateUser" && App.User != null)
             {
@@ -243,7 +264,7 @@ public class DataElement
         DrillDownDel(Model, dictionary);
     }
 
-    public Dictionary<string, object> MatchingValue(string Model, ExpandoObject Obj)
+    public Dictionary<string, object> MatchingValue(string Model, ExpandoObject Obj, int OpType)
     {
         var dictionary = new Dictionary<string, object>();
 
@@ -252,21 +273,21 @@ public class DataElement
             dictionary[property.Key] = property.Value;
         }
 
-        return MatchingValue(Model, dictionary);
+        return MatchingValue(Model, dictionary, OpType);
     }
 
-    public long Create(string Model, Dictionary<string, object> CreateObj)
+    public Dictionary<string, object> Create(string Model, Dictionary<string, object> CreateObj)
     {
-        var dt = MatchingValue(Model, CreateObj);
+        var dt = MatchingValue(Model, CreateObj, 1);
         _db.Insertable(dt).AS(Model).ExecuteCommand();
-        return (long)dt["Id"];
+        return dt;
     }
 
     public long BatchCreate(string Model, object Obj)
     {
-        var DictList = ToDictionaryList(Obj);
+        var DictList = Obj.ToDictionaryList();
         int res = 0;
-        for(var i = 0; i< DictList.Count(); i++)
+        for (var i = 0; i < DictList.Count(); i++)
         {
             Create(Model, DictList[i]);
             res++;
@@ -284,7 +305,7 @@ public class DataElement
                 var existingItem = _db.Queryable<dynamic>().AS(Model).Where("Id = @Id", new { Id = id }).ToList().FirstOrDefault();
                 if (existingItem == null)
                 {
-                    Create(Model,Obj[i]);
+                    Create(Model, Obj[i]);
                 }
                 else
                 {
@@ -302,20 +323,23 @@ public class DataElement
 
     public int AddElseUpdate(string Model, object Obj)
     {
-        var DictList = ToDictionaryList(Obj);
+        var DictList = Obj.ToDictionaryList();
         return BatchAddElseUpdate(Model, DictList);
     }
 
 
-    public int BatchAddElseUpdate<T>(List<T> Obj)
+    public List<T> BatchAddElseUpdate<T>(List<T> Obj)
     {
+        Type type = typeof(T);
         string typeName = typeof(T).Name;
-        int res = 0;
-        for (int i = 0; i < Obj.Count(); i++)
+        var res = new List<T>();
+        var settings = new JsonSerializerSettings
         {
-            // 获取对象的类型
-            Type type = typeof(T);
-
+            ReferenceLoopHandling = ReferenceLoopHandling.Ignore
+        };
+        DataTable PostMatchDatas = new DataTable();
+        foreach (var obj in Obj)
+        {
             // 获取对象的所有属性
             PropertyInfo[] properties = type.GetProperties();
 
@@ -325,23 +349,57 @@ public class DataElement
             // 遍历属性，将属性名和属性值添加到 Dictionary
             foreach (PropertyInfo property in properties)
             {
-                keyValuePairs[property.Name] = property.GetValue(Obj[i]);
+                keyValuePairs[property.Name] = property.GetValue(obj);
+            }
+            bool IsUpdate = keyValuePairs.ContainsKey("Id") && keyValuePairs["Id"] != null && long.TryParse(keyValuePairs["Id"].ToString(), out long id) && id != 0;
+            int OpType = IsUpdate ? 2 : 1;
+            var PostMatchData = MatchingValue(typeName, keyValuePairs, OpType);
+
+            keyValuePairs["Id"] = PostMatchData["Id"];
+            string resultJson = JsonConvert.SerializeObject(keyValuePairs, settings);
+            T resultObj = JsonConvert.DeserializeObject<T>(resultJson, settings);
+            res.Add(resultObj);
+
+            foreach(var key in PostMatchData.Keys)
+            {
+                if (!PostMatchDatas.Columns.Contains(key))
+                {
+                    PostMatchDatas.Columns.Add(key, typeof(object));
+                }
             }
 
-            if (keyValuePairs.ContainsKey("Id") && keyValuePairs["Id"] != null && (long)keyValuePairs["Id"] != 0)
+            DataRow row = PostMatchDatas.NewRow();
+            foreach (var pair in PostMatchData)
             {
-                Update(typeName, keyValuePairs);
+                row[pair.Key] = pair.Value;
             }
-            else
-            {
-                Create(typeName, keyValuePairs);
-            }
-            res++;
+
+            PostMatchDatas.Rows.Add(row);
         }
-        return 0;
+        List<string> LowerStrKeys = PostMatchDatas.Columns.Cast<DataColumn>().Select(x => x.ColumnName.ToLower()).ToList();
+
+        string TempTableName = "temp_" + typeName + SnowFlakeSingle.Instance.NextId().ToString();
+        string keysAsString = string.Join(", ", LowerStrKeys.Select(key => $"\"{key}\""));
+        string ColumnsAssignment = string.Join(", ", LowerStrKeys.Select(key => $"\"{key}\" = EXCLUDED.\"{key}\""));
+        string CreateTempTableSql = $"CREATE TEMP TABLE {TempTableName} AS SELECT * FROM {typeName} WITH NO DATA;";
+        string UpdateSql = $@"
+        INSERT INTO {typeName} ({keysAsString})
+        SELECT {keysAsString}
+        FROM {TempTableName}
+        ON CONFLICT (id) 
+        DO UPDATE SET {ColumnsAssignment}
+        WHERE {typeName}.id = EXCLUDED.id;";
+        using (_db.Ado.OpenAlways())
+        {
+            _db.Ado.ExecuteCommand(CreateTempTableSql);
+            _db.Fastest<System.Data.DataTable>().AS(TempTableName).BulkCopy(PostMatchDatas);
+            _db.Ado.ExecuteCommand(UpdateSql);
+        }
+
+        return res;
     }
 
-    public long AddElseUpdate<T>(T Obj)
+    public Dictionary<string, object> AddElseUpdate<T>(T Obj)
     {
         string typeName = typeof(T).Name;
         Dictionary<string, object> keyValuePairs = ObjectToDictionary(Obj);
@@ -354,8 +412,6 @@ public class DataElement
             return Create(typeName, keyValuePairs);
         }
     }
-
-
 
     public Dictionary<string, object> ObjectToDictionary(object obj, bool DeepTrans = true)
     {
@@ -375,7 +431,7 @@ public class DataElement
                     // 递归处理非基元数据类型，但如果是List类型，递归转换为List<Dictionary<string, object>>
                     if (value is IEnumerable && !(value is string) && DeepTrans)
                     {
-                        value = ToDictionaryList(value);
+                        value = value.ToDictionaryList();
                     }
                     else
                     {
@@ -390,33 +446,11 @@ public class DataElement
         return dict;
     }
 
-    public Dictionary<string, object> ObjectToDictionary(object obj)
-    {
-        // 获取对象的类型
-        Type type = obj.GetType();
-
-        // 获取对象的所有属性
-        PropertyInfo[] properties = type.GetProperties();
-
-        // 创建 Dictionary 存储属性和值
-        Dictionary<string, object> result = new Dictionary<string, object>();
-
-        // 遍历属性，将属性名和属性值添加到 Dictionary
-        foreach (PropertyInfo property in properties)
-        {
-            result[property.Name] = property.GetValue(obj);
-        }
-
-        return result;
-    }
-
 
     private static bool IsPrimitiveType(Type type)
     {
         return type.IsPrimitive || type.IsValueType || type == typeof(string);
     }
-
-
 
     public List<ExpandoObject> DrillDownData(DrillDownDataDto Params)
     {
@@ -436,7 +470,7 @@ public class DataElement
             if (!_cache.TryGetValue(cacheKey, out TempValueList))
             {
                 // 如果缓存中没有值，则执行数据库查询
-                TempValueList = Search(Params.model).Where(string.Format("{0} = {1}", Params.relField, Params.id)).ToList();
+                TempValueList = Search(Params.model).Where(string.Format("\"{0}\" = {1}", Params.relField.ToLower(), Params.id)).ToList();
                 // 将查询结果添加到缓存中
                 _cache.Set(cacheKey, TempValueList, 100);
             }
@@ -451,7 +485,7 @@ public class DataElement
             {
                 if (Field.Relate)
                 {
-                    expando[Field.Name] = GetRelateValue(expando, Field.Related);
+                    expando[Field.Name] = GetRelateValue(expando, Field);
                 }
                 else
                 {
@@ -511,8 +545,9 @@ public class DataElement
         return DynamicRes;
     }
 
-    public object GetRelateValue(IDictionary<string, object> obj, string propertyPath)
+    public object GetRelateValue(IDictionary<string, object> obj, SysField property)
     {
+        string propertyPath = property.Related;
         string[] pathSegments = propertyPath.Split('.');
         object currentObject = obj;
 
@@ -572,6 +607,10 @@ public class DataElement
         {
             res = res.FindAll(it => it.Name == ModelName);
         }
+        if (!res.Any())
+        {
+            throw new Exception("未能匹配到模型，请联系管理员");
+        }
         return res;
     }
 
@@ -627,7 +666,6 @@ public class DataElement
         }
         return res;
     }
-
 
     public List<SysField> GetSysModelLabelInfos(string name)
     {
@@ -772,26 +810,6 @@ public class DataElement
         }
     }
 
-    public List<Dictionary<string, object>> ToDictionaryList(object obj)
-    {
-        List<Dictionary<string, object>> result = new List<Dictionary<string, object>>();
-
-        if (obj is IEnumerable enumerable && !(obj is string))
-        {
-            // 如果是集合类型，递归处理每个元素
-            foreach (var item in enumerable)
-            {
-                result.Add(ObjectToDictionary(item));
-            }
-        }
-        else
-        {
-            // 如果是单个对象，直接处理
-            result.Add(ObjectToDictionary(obj));
-        }
-
-        return result;
-    }
 
     /// <summary>
     /// 转类型
@@ -896,4 +914,5 @@ public class DataElement
 
         return resultList;
     }
+
 }

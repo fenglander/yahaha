@@ -1,13 +1,16 @@
-﻿
+﻿using SqlSugar;
 using System.ComponentModel;
 
 namespace IMS.Manufacturing.Models;
 
-[YhhTable("生产订单")]
-public class ManufacturingOrder : EntityBase
+[YhhTable("生产订单", "Code")]
+public class ManufacturingOrder : EntityCompany
 {
     [YhhColumn(ColumnDescription = "编码", Display = true)]
     public string? Code { get; set; }
+
+    [YhhColumn(ColumnDescription = "顶层MO", RelationalType = RelationalType.ManyToOne)]
+    public string? TopLevelOrder { get; set; }
 
     [YhhColumn(ColumnDescription = "产品", RelationalType = RelationalType.ManyToOne)]
     public Material Product { get; set; }
@@ -54,6 +57,9 @@ public class ManufacturingOrder : EntityBase
     [YhhColumn(ColumnDescription = "工单种类")]
     public WorkOrderType? WorkOrderType { get; set; }
 
+    [YhhColumn(ColumnDescription = "订单日期")]
+    public DateTime? OrderDate { get; set; }
+
     [YhhColumn(ColumnDescription = "计划投产日期")]
     public DateTime PlannedStartDate { get; set; }
 
@@ -63,7 +69,7 @@ public class ManufacturingOrder : EntityBase
     [YhhColumn(ColumnDescription = "实际投产日期")]
     public DateTime? ActualStartDate { get; set; }
 
-    [YhhColumn(ColumnDescription = "计划完成日期")]
+    [YhhColumn(ColumnDescription = "实际完成日期")]
     public DateTime? ActualEndDate { get; set; }
 
     [YhhColumn(ColumnDescription = "出货日期")]
@@ -80,6 +86,76 @@ public class ManufacturingOrder : EntityBase
 
     [YhhColumn(ColumnDescription = "备料明细", RelationalType = RelationalType.OneToMany, Related = "Order")]
     public List<ManufacturingOrderMaterial>? MaterialDetails { get; set; }
+
+    [YhhColumn(ColumnDescription = "入库量")]
+    public decimal? ReceiptQty { get; set; }
+
+    [YhhColumn(ColumnDescription = "ERP入库量")]
+    public decimal? ERPReceiptQty { get; set; }
+
+    [YhhColumn(ColumnDescription = "销售订单需求量")]
+    public decimal? SODemandQty { get; set; }
+
+    [YhhColumn(ColumnDescription = "现存量")]
+    public decimal? CurrInvQty { get; set; }
+
+    [YhhColumn(ColumnDescription = "计划排产量")]
+    public decimal? ScheduledQty { get; set; }
+
+    [YhhColumn(ColumnDescription = "安全库存量")]
+    public decimal? SafetyStockQty { get; set; }
+
+    [YhhColumn(ColumnDescription = "库存可供应天数")]
+    public decimal? DaysofSupply { get; set; }
+
+    [YhhColumn(ColumnDescription = "库存可供应月数")]
+    public decimal? MonthsofSupply { get; set; }
+
+    [YhhColumn(ColumnDescription = "计划员备注", DataType = StaticConfig.CodeFirst_BigString)]
+    public string? PlannerNote { get; set; }
+
+    [YhhColumn(ColumnDescription = "生产订单类型", RelationalType = RelationalType.ManyToOne)]
+    public ManufacturingOrderType? ManufacturingOrderType { get; set; }
+
+    [YhhColumn(ColumnDescription = "入库仓库", RelationalType = RelationalType.ManyToOne)]
+    public Warehouse? ReceivingWarehouse { get; set; }
+
+    [YhhColumn(ColumnDescription = "项目", RelationalType = RelationalType.ManyToOne)]
+    public ProjectInfo? Project { get; set; }
+
+    [YhhColumn(ColumnDescription = "项目编号", RelationalType = RelationalType.Relate, Related = "Project.Code")]
+    public string? ProjectCode { get; set; }
+    /// <summary>
+    /// 分组标记
+    /// </summary>
+    [YhhColumn(ColumnDescription = "分组标记")]
+    public string? GroupTag { get; set; }
+
+    [YhhColumn(ColumnDescription = "版本")]
+    public decimal? Version { get; set; }
+    /// <summary>
+    /// 终止
+    /// </summary>
+    [YhhColumn(ColumnDescription = "终止")]
+    public bool? IsCancel { get; set; }
+    /// <summary>
+    /// 挂起
+    /// </summary>
+    [YhhColumn(ColumnDescription = "挂起")]
+    public bool? IsHoldRelease { get; set; }
+
+    [YhhColumn(ColumnDescription = "生产制程", RelationalType = RelationalType.ManyToOne)]
+    public ProductionProcess? Process { get; set; }
+
+    [YhhColumn(ColumnDescription = "用量与库存", RelationalType = RelationalType.Relate, Related = "Product.UsageAndInventory")]
+    public string? UsageAndInventory { get; set; }
+
+    [YhhColumn(ColumnDescription = "外部标识")]
+    public string? ExternalId { get; set; }
+
+    [YhhColumn(ColumnDescription = "外部更新时间")]
+    public DateTime? ExternalUpdateTime { get; set; }
+
 }
 
 public enum ManufacturingOrderStatus
@@ -119,7 +195,6 @@ public enum WorkOrderType
 }
 
 public enum ManufacturingType
-
 {
     [Description("CTO制造模式")]
     CTO = 1,

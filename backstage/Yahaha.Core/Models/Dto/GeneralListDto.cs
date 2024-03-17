@@ -12,9 +12,8 @@ public class GeneralListDto: BasePageInput
     /// 模型id
     /// </summary>
     public long model { get; set; }
-        
+    
     public List<fieldFilter>? filters { get; set;}
-        
 }
 
 public class fieldFilter

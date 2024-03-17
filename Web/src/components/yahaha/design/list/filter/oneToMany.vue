@@ -14,9 +14,9 @@
 </template>
   
 <script setup lang="ts">
-import { PropType, ref, computed } from 'vue';
+import { PropType, ref } from 'vue';
 import { fieldFilter } from '/@/api-services/models';
-import { useSysModel } from '/@/stores/sysModel';
+//import { useSysModel } from '/@/stores/sysModel';
 const emit = defineEmits(['update:modelValue'])
 const props = defineProps({
     modelValue: {
@@ -50,15 +50,6 @@ const comparisons = ref([
     },
 ]);
 
-/**获取标题 */
-const lableDescription = computed(() => {
-    const lables = useSysModel().getSysModelLables(props.field.RelModel?.Name);
-    const lastLable = lables[lables.length - 1];
-    const lastItem = useSysModel().getSysFields(props.field.RelModel?.Name).find((item: any) => item.Name === lastLable);
-    return lastItem.Description;
-})
-
-
 const handleFilter = (value: string) => {
     const newLabel = comparisons.value.find((item) => item.label === 'new');
 
@@ -68,7 +59,7 @@ const handleFilter = (value: string) => {
             let isSelected = comparisons.value[1].options.find((option) => option.value === JSON.stringify({ ConditionalType: item.key, value: value }));
 
             if (item.index < 5 && value && !isSelected) {
-                item.name = lableDescription.value + item.label + ":" + value;
+                item.name = item.label + ":" + value;
 
                 item.value = JSON.stringify({ ConditionalType: item.key, value: value });
                 item.disabled = false;
@@ -139,8 +130,6 @@ const cleanTagOption = (newValue: any) => {
     if (Array.isArray(newValue)) {
         comparisons.value[1].options = comparisons.value[1].options.filter(option => newValue.includes(option.value));
     }
-
-    console.log(comparisons.value);
 };
 
 

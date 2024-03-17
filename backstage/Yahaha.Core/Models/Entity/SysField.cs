@@ -79,6 +79,9 @@ public class SysField : EntityBase
     [SugarColumn(ColumnDescription = "其他属性")]
     public string? ExtendedAttribute { get; set; }
 
+    [YhhColumn(ColumnDescription = "Update操作不处理该列")]
+    public bool? IsOnlyIgnoreUpdate { get; set; }
+
     /// <summary>
     /// @null 删除关联记录后，当前值会设为null。
     /// @restrict 删除关联记录时，如果与本记录存在关联，则不允许删除。

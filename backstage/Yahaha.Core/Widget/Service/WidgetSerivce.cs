@@ -1,18 +1,10 @@
-﻿using Microsoft.AspNetCore.Mvc.ModelBinding;
-using Nest;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Yahaha.Core.Models.Entity;
+﻿using Furion.RemoteRequest;
+using System.Text.Json;
 using Yahaha.Core.Models;
 using Yahaha.Core.Widget.Dto;
-using OfficeOpenXml.FormulaParsing.Excel.Functions.RefAndLookup;
-using Yahaha.Core.Service.Role.Dto;
-using System.Collections;
 
 namespace Yahaha.Core.Widget.Service;
+
 /// <summary>
 /// 小组件相关接口
 /// </summary>
@@ -21,19 +13,15 @@ public class WidgetSerivce : IDynamicApiController, ITransient
 {
     private readonly IdentityService _identitySvc;
     private readonly UserManager _userManager;
-    private readonly SqlSugarRepository<SysModel> _sysModel;
-    private readonly SqlSugarRepository<SysField> _sysField;
     private readonly ISqlSugarClient _db;
     private DataElement _de;
 
-    public WidgetSerivce(IdentityService identitySvc, UserManager userManager, SqlSugarRepository<SysModel> sysModel, SqlSugarRepository<SysField> sysField, ISqlSugarClient db)
+    public WidgetSerivce(IdentityService identitySvc, UserManager userManager, ISqlSugarClient db, DataElement de)
     {
         _identitySvc = identitySvc;
         _userManager = userManager;
-        _sysModel = sysModel;
-        _sysField = sysField;
         _db = db;
-        _de = new DataElement(_db);
+        _de = de;
     }
 
     /// <summary>
@@ -41,25 +29,41 @@ public class WidgetSerivce : IDynamicApiController, ITransient
     /// </summary>
     /// <param name="input"></param>
     /// <returns></returns>
-    public List<dynamic> SelRelObjectQuery(SelRelObjectQueryDto input)
+    public object SelRelObjectQuery(SelRelObjectQueryDto input)
     {
-        var Query = _de.Search(input.RelModelName);
-        if(input.Keywords != null)
-        {
-            var lable = _de.GetSysModelLabelInfos(input.RelModelName).LastOrDefault();
-            var conModels = new List<IConditionalModel>
-            {
-                new ConditionalModel { FieldName = lable.Name, ConditionalType = ConditionalType.Like, FieldValue =  input.Keywords}
-            };
-            Query = Query.Where(conModels);
-        }
-         var Row = Query.ToPagedList(1, input.PageSize);
-        DrillDownDataDto DrillDownParams = new DrillDownDataDto
-        {
-            model = input.RelModelName,
-            items = Row.Items.ToList(),
-        };
-        var res = _de.DrillDownData(DrillDownParams);
-        return res.Select(expando => (dynamic)expando).ToList();
+        var Model = _de.GetSysModels(null, input.RelModelName).FirstOrDefault();
+
+        Type classType = Model.GetclassType();
+
+        MethodInfo genericSearchMethod = typeof(DataElement).GetMethods()
+            .FirstOrDefault(m => m.Name == nameof(DataElement.Search) && m.IsGenericMethod && m.GetParameters().Length == 1);
+
+        MethodInfo constructedSearchMethod = genericSearchMethod.MakeGenericMethod(classType);
+        dynamic Query = constructedSearchMethod.Invoke(_de, new object[] { null });
+
+       var resultList = Query.ToList();
+
+        // 构建属性访问表达式
+        var parameter = Expression.Parameter(classType, "item");
+        var property = Expression.Property(parameter, "ModelTitle");
+        var constant = Expression.Constant(input.Keywords); // 替换 someValue 为实际的值
+        var containsMethod = typeof(string).GetMethod("Contains", new[] { typeof(string) });
+        var containsCall = Expression.Call(property, containsMethod, constant);
+        var lambda = Expression.Lambda(containsCall, parameter);
+
+        // 构建 Where 方法调用
+        var whereCallExpression = Expression.Call(
+            typeof(Enumerable),
+            "Where",
+            new Type[] { classType },
+            Expression.Constant(resultList),
+            lambda
+        );
+
+        // 执行查询并转换结果为列表
+        var queryable = Expression.Lambda(whereCallExpression).Compile().DynamicInvoke() as IEnumerable<dynamic>;
+        object res = queryable.Take(20).ToDictionaryList();
+        return res;
+
     }
 }

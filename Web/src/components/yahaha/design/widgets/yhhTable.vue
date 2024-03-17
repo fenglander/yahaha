@@ -21,7 +21,7 @@
       </template>
     </el-table-column>
   </el-table>
-  <el-button v-if="!readonly" class="mt-4" style="width: 100%" @click="addRow">Add Item</el-button>
+  <el-button v-if="!readonly" class="mt-4" style="width: 100%" @click="addRow">添加</el-button>
 </template>
 
 <script setup lang="ts">
@@ -159,14 +159,10 @@ const TrigRelateFieldVals = () => {
   }
 }
 
-const getEmptyData = () => {
+const getEmptyData = async () => {
   let data: any[] = [];
-  const result: { [key: string]: null } = {};
-  if (config.value.SubFields) {
-    config.value.SubFields.forEach((item: any) => {
-      result[item.Name] = null;
-    });
-  }
+  const relModelId = config.value.RelModel.Id;
+  const result = await useSysModel().getSysModelEmptyDataById(relModelId);
   data.push(result);
   return data
 }
@@ -210,14 +206,14 @@ const updateModelValue = debounce(
 // 监听双向绑定值改变，用于回显
 watch(
   () => props.modelValue,
-  () => {
+  async () => {
     if (!updatingModelValue) { // 如果不是在更新 modelValue 的过程中
       const hasValue = props.modelValue && props.modelValue.length > 0;
       let temp;
       if (hasValue) {
         temp = props.modelValue;
       } else {
-        temp = getEmptyData();
+        temp = await getEmptyData();
       }
       const tempAddIndex = temp.map((item: any, index: any) => ({ ...item, index }));
       childData.value = tempAddIndex;

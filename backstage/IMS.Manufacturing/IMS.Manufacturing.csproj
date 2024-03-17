@@ -7,7 +7,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\IMS\IMS.Basic\IMS.Basic.csproj" />
+    <ProjectReference Include="..\UT.APS\UT.APS.csproj" />
+    <ProjectReference Include="..\UT.U9\UT.U9.csproj" />
     <ProjectReference Include="..\Yahaha.Core\Yahaha.Core.csproj" />
   </ItemGroup>
 

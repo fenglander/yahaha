@@ -7,17 +7,16 @@
 // 软件按“原样”提供，不提供任何形式的明示或暗示的保证，包括但不限于对适销性、适用性和非侵权的保证。
 // 在任何情况下，作者或版权持有人均不对任何索赔、损害或其他责任负责，无论是因合同、侵权或其他方式引起的，与软件或其使用或其他交易有关。
 
+using Minio.DataModel;
 using NewLife.Reflection;
 using Newtonsoft.Json.Linq;
-using OfficeOpenXml.FormulaParsing.Excel.Functions.RefAndLookup;
-using System;
+using OfficeOpenXml.FormulaParsing.Excel.Functions.Text;
+using System.Collections.Generic;
 using System.Dynamic;
 using Yahaha.Core.Models;
 using Yahaha.Core.Models.Dto;
 using Yahaha.Core.Models.Entity;
 using Yahaha.Core.Service.Role.Dto;
-using Yahaha.Core.VisualDev.Entity;
-using static COSXML.Model.Tag.DocumentCensorResult;
 
 namespace Yahaha.Core.Service;
 
@@ -62,7 +61,7 @@ public class ModelsService : IDynamicApiController, ITransient
         var query = _de.Search(nameof(SysAction));
         if (modelid != null)
         {
-            query = query.Where("\"BindingModel\" = @model", new { model = (long)modelid });
+            query = query.Where("BindingModel = @model", new { model = (long)modelid });
         }
         var Raw = query.ToList();
         DrillDownDataDto DrillDownParams = new DrillDownDataDto
@@ -168,7 +167,6 @@ public class ModelsService : IDynamicApiController, ITransient
                     if (item == null) continue;
                     var SubConditionalModelObj = new JObject();
 
-
                     if (item.conditionalType == ConditionalType.IsNullOrEmpty || item.conditionalType == ConditionalType.IsNot)
                     {
                         string StrEsxists = item.conditionalType == ConditionalType.IsNot ? "NOT EXISTS" : "EXISTS";
@@ -209,6 +207,7 @@ public class ModelsService : IDynamicApiController, ITransient
             model = Model.Name,
             items = Raw.Items.ToList(),
             ConnectionId = App.HttpContext.Connection.Id,
+            maxLevel = 1,
         };
 
         var expandoList = _de.DrillDownData(DrillDownParams);
@@ -225,6 +224,37 @@ public class ModelsService : IDynamicApiController, ITransient
             fields = Fields,
         };
         return res;
+    }
+
+    /// <summary>
+    /// 获取模型标题
+    /// </summary>
+    /// <param name="input"></param>
+    /// <returns></returns>
+    [HttpPost]
+    public dynamic GetModelTitle(GeneralCreateDto input)
+    {
+        var Model = _de.GetSysModels(input.model,null).FirstOrDefault();
+        Assembly assembly = Assembly.Load(Model.ModuleName);
+        Type classType = assembly.GetType(Model.FullName);
+        string resultJson = JsonConvert.SerializeObject(input.data);
+        var typedObject = JsonConvert.DeserializeObject(resultJson, classType);
+        var resProperty = classType.GetProperty(nameof(EntityBase.ModelTitle));
+        var Title = resProperty?.GetValue(typedObject);
+        return Title;
+    }
+
+    /// <summary>
+    /// 获取模型标题
+    /// </summary>
+    /// <param name="model">模型ID</param>
+    /// <returns></returns>
+    public dynamic GetModelEmptyData([FromQuery] long model)
+    {
+        var Model = _de.GetSysModels(model, null).FirstOrDefault();
+        Type classType = Model.GetclassType();
+        object instance = Activator.CreateInstance(classType);
+        return _de.ObjectToDictionary(instance as Object);
     }
 
     /// <summary>
@@ -252,12 +282,15 @@ public class ModelsService : IDynamicApiController, ITransient
         {
             model = Model.Name,
             items = Row,
-            maxLevel = 3,
+            maxLevel = 2,
             ConnectionId = App.HttpContext.Connection.Id,
         };
         var res = _de.DrillDownData(DrillDownParams).FirstOrDefault();
+        Type classType = Model.GetclassType();
 
-        return res;
+        string resultJson = JsonConvert.SerializeObject(res);
+        var typedObject = JsonConvert.DeserializeObject(resultJson, classType);
+        return _de.ObjectToDictionary(typedObject as Object);
     }
 
     /// <summary>
@@ -275,7 +308,7 @@ public class ModelsService : IDynamicApiController, ITransient
         string ids = string.Join(",", input.ids);
         var conModels = new List<IConditionalModel>
         {
-            new ConditionalModel { FieldName = "\"Id\"", ConditionalType = ConditionalType.In, FieldValue = ids }
+            new ConditionalModel { FieldName = "Id", ConditionalType = ConditionalType.In, FieldValue = ids }
         };
         var list = _de.Search(Model.Name).Where(conModels).ToList();
         return _de.Delete(Model.Name, list);
@@ -286,13 +319,9 @@ public class ModelsService : IDynamicApiController, ITransient
     /// </summary>
     /// <param name="input">传参</param>
     /// <returns></returns>
-    public long GeneralSave(GeneralCreateDto input)
+    public Dictionary<string, object> GeneralSave(GeneralCreateDto input)
     {
-        var Model = _sysModel.GetById(input.model);
-        if (Model == null || Model.Name == null)
-        {
-            throw new Exception("请输入正确表名");
-        }
+        var Model = _de.GetSysModels(input.model,null).FirstOrDefault();
         // 将 object 转换为 JToken
         JToken jToken = JToken.FromObject(input.data);
         // 将 JToken 转换为 Dictionary<string, object>
@@ -349,11 +378,9 @@ public class ModelsService : IDynamicApiController, ITransient
         var updatedRec = resProperty?.GetValue(instance);
 
         // 输出结果
-        res.Data = _de.ToDictionaryList(updatedRec as Object);
+        res.Data = updatedRec.ToDictionaryList();
         res.Result = result;
 
         return res;
     }
-
-
 }

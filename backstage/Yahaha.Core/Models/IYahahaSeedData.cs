@@ -1,4 +1,6 @@
-﻿namespace Yahaha.Core;
+﻿using Yahaha.Core.Models;
+
+namespace Yahaha.Core;
 
 /// <summary>
 /// 支持新实体结构的种子数据接口
@@ -7,10 +9,9 @@
 public interface IYahahaSeedData<TEntity>
     where TEntity : class, new()
 {
-
     /// <summary>
     /// 返回种子数据
     /// </summary>
     /// <returns></returns>
-    IEnumerable<TEntity> HasData();
+    IEnumerable<TEntity> HasData(DataElement de);
 }

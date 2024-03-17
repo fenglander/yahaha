@@ -9,13 +9,9 @@
 
 using Furion.SpecificationDocument;
 using Lazy.Captcha.Core;
-using Nest;
-using OfficeOpenXml.FormulaParsing.Excel.Functions.RefAndLookup;
-using SixLabors.ImageSharp.Metadata.Profiles.Iptc;
 using Yahaha.Core.Ldap;
 using Yahaha.Core.Models;
 using Yahaha.Core.Service.Role.Dto;
-using static SKIT.FlurlHttpClient.Wechat.Api.Models.CgibinExpressBusinessAccountGetAllResponse.Types;
 
 namespace Yahaha.Core.Service;
 

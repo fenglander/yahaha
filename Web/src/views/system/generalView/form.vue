@@ -13,8 +13,8 @@
             <!-- <el-button type="danger" @click="validate()"> 校验 </el-button> -->
             <el-button type="primary" v-if="actionType === 3" @click="editFun"> 编辑 </el-button>
             <el-button type="primary" v-if="actionType === 1 || actionType === 2" @click="saveFun"> 保存 </el-button>
-            <el-button v-if="actionType === 3" @click="cancelFun"> 新建 </el-button>
-            <el-button v-if="actionType === 1 || actionType === 2" @click="cancelFun"> 取消 </el-button>
+            <el-button v-if="actionType === 3" @click="createFun"> 新建 </el-button>
+            <el-button v-if="actionType === 2" @click="cancelFun"> 取消 </el-button>
             <el-button v-if="id" @click="deleteFun"> 删除 </el-button>
           </el-button-group>
         </el-space>
@@ -26,15 +26,16 @@
     </div>
   </el-card>
 </template>
-  
+
 <script setup lang="ts" name="generalFormView">
-import { ref, reactive, computed } from 'vue';
+import { ref, reactive, computed, watch } from 'vue';
 import { ElMessage } from 'element-plus'
 import { useRouter, useRoute } from 'vue-router';
 import { stringToObj } from '/@/components/yahaha/design/utils/form';
 import { deepClone, key, formatNumber } from '/@/components/yahaha/design/utils'
 import pinia from '/@/stores/index';
 import mittBus from "/@/utils/mitt";
+import { debounce } from 'lodash-es';
 import formRenderer from '/@/components/yahaha/design/form/components/formRenderer.vue'
 import { useVisualDev } from '/@/stores/visualDev';
 import { useSysModel } from '/@/stores/sysModel';
@@ -76,13 +77,16 @@ const sysModel = computed(() => {
   }
 })
 
-const title = computed(() => {
-  if (id.value && dataRecs.value) {
-    return useSysModel().getTitleByrForm(sysModel.value.Id, dataRecs.value)
-  } else {
-    return '新建';
+const title = ref<any>();
+
+const getFormTitle = async (modelId: any, newVal: any) => {
+  const params = {
+    model: modelId,
+    data: newVal
   }
-})
+  const res = await api.getModelTitle(params);
+  return res.data.result;
+}
 
 const functionList = computed(() => {
   if (visualDev.value) {
@@ -180,6 +184,14 @@ const cancelFun = async () => {
   getDataRecs();
 }
 
+const createFun = () => {
+  router.replace({
+    path: currentRoute.path,
+    query: { model: query.model, visualDev: query.visualDev },
+  });
+  mittBus.emit('onCurrentContextmenuClick', Object.assign({}, { contextMenuClickId: 1, ...route }));
+}
+
 const executeFunc = async (fun: any) => {
   const params = {
     moduleName: fun.ActionModuleName,
@@ -256,8 +268,23 @@ const getDataRecs = async () => {
   loadingComplete.value = true;
 }
 getDataRecs()
+
+watch(
+  () => dataRecs.value,
+  async (newVal) => {
+    if (id.value) {
+      title.value = await getFormTitle(sysModel.value.Id, newVal);
+    } else {
+      title.value = '新建';
+    }
+  },
+  {
+    deep: true
+  }
+);
+
 </script>
-  
+
 <style lang="scss" scoped>
 .yahaha-form {
 
@@ -265,7 +292,7 @@ getDataRecs()
   height: 100%;
 
   :deep(.el-card__header) {
-    padding: 10px 25px;
+    padding: 10px 20px;
   }
 
   .card-header {
@@ -291,5 +318,4 @@ getDataRecs()
     border-bottom-right-radius: 4px;
   }
 }
-</style>
-  
+</style>: any: any(: any)

@@ -1,28 +1,28 @@
 <template>
-    <el-popover  popper-class="el-popover-self" :width="popoverWidth" :visible="isPopover"
-        :content="getvalue()" :fallback-placements="['bottom', 'top', 'right', 'left']">
+    <el-popover popper-class="el-popover-self" popper-style="text-align: center;" :width="popoverWidth" :visible="isPopover"
+        :fallback-placements="['bottom', 'top', 'right', 'left']">
         <template #reference>
             <div ref="ytext" class="member-label member-span text-hidden" @mouseenter="visibilityChange($event)"
                 @mouseleave="() => isPopover = false">
                 <el-text>{{ getvalue() }}</el-text>
             </div>
-
         </template>
+        <el-text>{{ getvalue() }}</el-text>
     </el-popover>
 </template>
-  
+
 <script setup lang="ts">
-import { ref,toRefs } from 'vue';
+import { ref, toRefs } from 'vue';
 const isPopover = ref(false);
 const popoverWidth = ref(200);
 const ytext = ref();
 const props = withDefaults(
-  defineProps<{
-    widgetConfig?: any,
-    modelValue?: any,
-  }>(),
-  {
-  }
+    defineProps<{
+        widgetConfig?: any,
+        modelValue?: any,
+    }>(),
+    {
+    }
 )
 
 const { modelValue } = toRefs(props);
@@ -42,11 +42,11 @@ const visibilityChange = (event: any) => {
     const ev_weight = ev.scrollWidth; // 文本的实际宽度   scrollWidth：对象的实际内容的宽度，不包边线宽度，会随对象中内容超过可视区后而变大。
     const content_weight = ev.clientWidth;// 文本的可视宽度 clientWidth：对象内容的可视区的宽度，不包滚动条等边线，会随对象显示大小的变化而改变。
     //const content_weight = ytext.value.clientWidth; // 文本容器宽度(父节点)
-    //console.log('ev_weight',ev_weight);
-    //console.log('ev_weight',content_weight);
+    //console.log('ev_weight',ytext.value.clientWidth);
+    //console.log('content_weight',content_weight);
     if (ev_weight > content_weight) {
         // 实际宽度 > 可视宽度  文字溢出
-        popoverWidth.value = ev_weight <= 250 ? ev_weight + 50 : 300;
+        popoverWidth.value = ev_weight <= 250 ? ev_weight + 10 : 300;
 
         isPopover.value = true;
     } else {
@@ -55,7 +55,8 @@ const visibilityChange = (event: any) => {
     }
 };
 </script>
-<style>
+
+<style scoped lang="scss">
 .text-hidden {
     overflow: hidden;
     white-space: nowrap;

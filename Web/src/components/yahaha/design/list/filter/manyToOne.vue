@@ -3,7 +3,7 @@
         default-first-option :popper-append-to-body="false" type="daterange" :placeholder="'请输入' + props.field?.Description"
         :loading="loading" :filter-method="handleFilter" @change="updateValue" @remove-tag="cleanTagOption"
         @clear="cleanAllTagOption" @visible-change="updateValueByVisible">
-        <el-option class="yhh-search-manyToOne-opations" v-for="item in comparisons" :key="item.id" :label="item.name"
+        <el-option class="yhh-search-manyToOne-opations" v-for="item in comparisons" :key="item.id" :label="item.ModelTitle"
             :value="item" :disabled="item.disabled">
             <el-row align="middle">
                 <el-button v-if="!item.isDefault" style="margin-right: 10px;" type="danger"
@@ -18,9 +18,9 @@
 </template>
   
 <script setup lang="ts">
-import { PropType, ref, computed } from 'vue';
+import { PropType, ref } from 'vue';
 import { fieldFilter } from '/@/api-services/models';
-import { useSysModel } from '/@/stores/sysModel';
+//import { useSysModel } from '/@/stores/sysModel';
 import { selRelObjectQuery } from '/@/api/widget';
 import { debounce } from 'lodash-es';
 
@@ -45,13 +45,6 @@ const basic = ref([
     { id: 6, name: "未设置", label: "未设置", key: "EqualNull", value: JSON.stringify({ ConditionalType: "EqualNull", value: null }), isDefault: true },
 ])
 
-/**获取标题 */
-const lableName = computed(() => {
-    const lables = useSysModel().getSysModelLables(props.field.RelModel?.Name);
-    return lables[lables.length - 1]
-})
-
-
 
 const selRelObjectQueryDebounce = debounce(
     async function (query: string) {
@@ -66,8 +59,8 @@ const selRelObjectQueryDebounce = debounce(
             comparisons.value.push({
                 id: it.Id,
                 value: it.Id,
-                name: it[lableName.value],
-                label: it[lableName.value],
+                name: it.ModelTitle,
+                label: it.ModelTitle,
                 key: it.Id,
                 isDefault: false,
                 notEqual: false,

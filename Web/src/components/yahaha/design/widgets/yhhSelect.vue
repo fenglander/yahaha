@@ -1,10 +1,10 @@
 <template>
-  <yhhText v-if="readonly" v-model="value"></yhhText>
+  <yhhText v-if="readonly" v-model="display"></yhhText>
   <el-select v-model="value" v-else clearable filterable :placeholder="config.placeholder">
     <el-option v-for="item in opations" :key="item.value" :label="item.description" :value="item.value" />
   </el-select>
 </template>
-  
+
 <script setup lang="ts">
 import { computed, toRefs } from 'vue';
 import {
@@ -47,6 +47,14 @@ const readonly = computed(() => {
   return props.widgetConfig.readonly
 })
 
+const display = computed(() => {
+  if (value?.value) {
+    return opations.value.find((t: any) => t.value === value.value).description;
+  } else {
+    return null;
+  }
+})
+
 // const formProps = inject(constFormProps, {}) as any
 
 
@@ -61,7 +69,7 @@ const readonly = computed(() => {
 // })
 
 </script>
-  
+
 <style lang="scss" scoped>
 .el-input-number .el-input__inner {
   text-align: left;

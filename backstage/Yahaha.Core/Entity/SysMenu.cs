@@ -45,6 +45,7 @@ public class SysMenu : EntityBase
     /// </summary>
     [YhhColumn(ColumnDescription = "系统模型")]
     public long? ModelId { get; set; }
+
     /// <summary>
     /// 路由名称
     /// </summary>

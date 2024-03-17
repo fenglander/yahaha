@@ -7,7 +7,6 @@
 // 软件按“原样”提供，不提供任何形式的明示或暗示的保证，包括但不限于对适销性、适用性和非侵权的保证。
 // 在任何情况下，作者或版权持有人均不对任何索赔、损害或其他责任负责，无论是因合同、侵权或其他方式引起的，与软件或其使用或其他交易有关。
 
-using SqlSugar;
 using Yahaha.Core.Models;
 
 namespace Yahaha.Core;
@@ -40,9 +39,6 @@ public static class SqlSugarSetup
             });
         });
 
-        services.AddSingleton<ISqlSugarClient>(sqlSugar); // 单例注册
-        services.AddScoped(typeof(SqlSugarRepository<>)); // 仓储注册
-        services.AddUnitOfWork<SqlSugarUnitOfWork>(); // 事务与工作单元注册
         // 数据元注册
         services.AddSingleton(provider =>
         {
@@ -50,6 +46,10 @@ public static class SqlSugarSetup
             var sqlSugarClient = provider.GetRequiredService<ISqlSugarClient>();
             return new DataElement(sqlSugarClient);
         });
+        services.AddSingleton<ISqlSugarClient>(sqlSugar); // 单例注册
+        services.AddScoped(typeof(SqlSugarRepository<>)); // 仓储注册
+        services.AddUnitOfWork<SqlSugarUnitOfWork>(); // 事务与工作单元注册
+        
         // 初始化数据库表结构及种子数据
         dbOptions.ConnectionConfigs.ForEach(config =>
         {
@@ -111,6 +111,7 @@ public static class SqlSugarSetup
                     if (!yahaha.ColumnDescription.IsNullOrEmpty()) { column.ColumnDescription = yahaha.ColumnDescription; }
                     if (!yahaha.ColumnName.IsNullOrEmpty()) { column.DbColumnName = yahaha.ColumnName; }
                     if (yahaha.IsIgnore) { column.IsIgnore = yahaha.IsIgnore; }
+                    if (yahaha.IsOnlyIgnoreUpdate) { column.IsOnlyIgnoreUpdate = yahaha.IsOnlyIgnoreUpdate; }
                     if (yahaha.Length > 0) { column.Length = yahaha.Length; }
                     if (yahaha.DecimalDigits > 0) { column.DecimalDigits = yahaha.DecimalDigits; }
                     if (yahaha.IsJson) { column.IsJson = yahaha.IsJson; }
@@ -121,7 +122,7 @@ public static class SqlSugarSetup
                         column.IsOnlyIgnoreInsert = true;
                         column.IsOnlyIgnoreUpdate = true;
                     }
-                    if (yahaha.RelationalType == RelationalType.Relate)
+                    if (yahaha.RelationalType == RelationalType.Relate || yahaha.RelationalType == RelationalType.OneToMany)
                     {
                         column.IsIgnore = true;
                     }

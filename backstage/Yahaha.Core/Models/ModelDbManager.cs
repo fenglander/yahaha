@@ -1,10 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using AngleSharp.Mathml.Dom;
+using Microsoft.CodeAnalysis;
 using Yahaha.Core.Models.Entity;
 using Yahaha.Core.Service.Role.Dto;
-using OfficeOpenXml.FormulaParsing.Excel.Functions.Text;
-using System.Runtime;
-using Microsoft.CodeAnalysis;
-using Org.BouncyCastle.Asn1.Cms;
 
 namespace Yahaha.Core.Models;
 
@@ -34,9 +31,12 @@ public static class ModelDbManager
             var YhhTableAttr = entityType.GetCustomAttribute<YhhTable>();
 
             SysModel Model = new SysModel();
-            Model.Name =  entityType.Name;
+            Model.Name = entityType.Name;
             Model.FullName = entityType.FullName;
+            Model.ModuleName = Path.GetFileNameWithoutExtension(entityType.Module.Name);
             Model.Description = YhhTableAttr != null ? YhhTableAttr?.Description : TableAttr?.TableDescription;
+            Model.DefaultSort = YhhTableAttr != null ? YhhTableAttr?.DefaultSort : null;
+            Model.DefaultSort = Model.DefaultSort == null && entityType.IsSubclassOf(typeof(EntityBase)) ? nameof(EntityBase.CreateTime).ToLower() + " desc" : Model.DefaultSort;
             Model.IsVirtual = entityType.IsSubclassOf(typeof(VirtualBase));
             Model.CreateUser = null;
 
@@ -44,7 +44,7 @@ public static class ModelDbManager
             if (ExistCurRecs != null && ExistCurRecs.Count > 0)
             {
                 Model.Id = ExistCurRecs.FirstOrDefault().Id;
-                RetainedModelIds.Add(Model.Id);
+                RetainedModelIds.Add((long)Model.Id);
                 dbProvider.Updateable(Model).ExecuteCommand();
             }
             else
@@ -64,29 +64,30 @@ public static class ModelDbManager
                     SysField Field = ExistFieldInfoRecs.FirstOrDefault(it => it.Name == item.Name && it.ModelId == Model.Id);
                     if (Field != null)
                     {
-                        RetainedFieldIds.Add(Field.Id);
+                        RetainedFieldIds.Add((long)Field.Id);
                     }
                     else
                     {
                         Field = new SysField();
                     }
                     //var x = item.PropertyType.GenericTypeArguments[0].Name;
-                    Field.NotNull = IsNullable(item, YhhColumnAttr,dataElement);
                     Field = GetType(item, Field, ColumnAttr, YhhColumnAttr);
+                    Field.NotNull = IsNullable(item, YhhColumnAttr, Field);
                     Field.ModelId = Model.Id;
                     Field.SysModel = Model;
                     Field.Name = item.Name;
                     Field.Description = YhhColumnAttr?.ColumnDescription != null ? YhhColumnAttr.ColumnDescription : ColumnAttr?.ColumnDescription;
                     Field.ExtendedAttribute = ColumnAttr?.ExtendedAttribute != null ? ColumnAttr?.ExtendedAttribute.ToString() : null;
 
+                    Field.IsOnlyIgnoreUpdate = YhhColumnAttr?.IsOnlyIgnoreUpdate;
                     Field.DecimalDigits = YhhColumnAttr?.DecimalDigits;
                     Field.Length = YhhColumnAttr?.Length;
                     Field.Help = YhhColumnAttr?.Help;
                     Field.Display = YhhColumnAttr?.Display != null ? YhhColumnAttr.Display : false;
                     Field.Related = YhhColumnAttr?.Related;
                     Field.OnDelete = YhhColumnAttr?.OnDelete;
-                    
-                    if (Field.Display == true && relationalTypes.Contains(Field.tType)) 
+
+                    if (Field.Display == true && relationalTypes.Contains(Field.tType))
                     {
                         throw new Exception(string.Format("模型：{0}，字段：{1}，关系类型字段不能作为标题，请选择字符串类型或其他类型字段。"));
                     }
@@ -95,7 +96,7 @@ public static class ModelDbManager
             }
         }
 
-        List<SysModel> DeleteModelInfoRecs = ExistModelRecs.Where(it => !RetainedModelIds.Contains(it.Id)).ToList();
+        List<SysModel> DeleteModelInfoRecs = ExistModelRecs.Where(it => !RetainedModelIds.Contains((long)it.Id)).ToList();
 
         // 更新关联表id 更新关联字段类型
         foreach (SysField Field in UpdateFieldInfoRecs.Where(it => !string.IsNullOrEmpty(it.RelModelName)))
@@ -112,7 +113,7 @@ public static class ModelDbManager
         //dbProvider.Storageable(UpdateFieldInfoRecs).DefaultAddElseUpdate().ExecuteCommand();
         dataElement.SetSysFieldsCache(UpdateFieldInfoRecs);
         dataElement.BatchAddElseUpdate(UpdateFieldInfoRecs);
-        List<SysField> DeleteFieldInfoRecs = ExistFieldInfoRecs.Where(it => !RetainedFieldIds.Contains(it.Id)).ToList();
+        List<SysField> DeleteFieldInfoRecs = ExistFieldInfoRecs.Where(it => !RetainedFieldIds.Contains((long)it.Id)).ToList();
         dataElement.Delete(DeleteFieldInfoRecs);
         dataElement.Delete(DeleteModelInfoRecs);
     }
@@ -126,7 +127,7 @@ public static class ModelDbManager
 
         List<SysAction> actionList = new List<SysAction>();
         List<SysAction> ExistActionRecs = dbProvider.Queryable<SysAction>().ToList();
-        var Row = dataElement.Search<SysModel>().ToList();
+        var Row = dataElement.Search("SysModel").ToList();
         DrillDownDataDto DrillDownParams = new DrillDownDataDto
         {
             model = nameof(SysModel),
@@ -161,7 +162,7 @@ public static class ModelDbManager
                 SysAction Action = ExistActionRecs.FirstOrDefault(it => it.ActionClassName == entityType.FullName && it.ActionName == method.Name);
                 if (Action != null)
                 {
-                    RetainedActionIds.Add(Action.Id);
+                    RetainedActionIds.Add((long)Action.Id);
                 }
                 else
                 {
@@ -187,7 +188,7 @@ public static class ModelDbManager
             }
         }
         dataElement.BatchAddElseUpdate(actionList);
-        List<SysAction> DeleteActionRecs = ExistActionRecs.Where(it => !RetainedActionIds.Contains(it.Id)).ToList();
+        List<SysAction> DeleteActionRecs = ExistActionRecs.Where(it => !RetainedActionIds.Contains((long)it.Id)).ToList();
         dataElement.Delete(DeleteActionRecs);
     }
 
@@ -199,54 +200,48 @@ public static class ModelDbManager
         if (!seedDataTypes.Any()) return;
         foreach (var seedType in seedDataTypes)
         {
-            var instance = Activator.CreateInstance(seedType, de);
+            var instance = Activator.CreateInstance(seedType);
 
             var hasDataMethod = seedType.GetMethod("HasData");
-            var seedData = ((IEnumerable)hasDataMethod?.Invoke(instance, null))?.Cast<object>();
+            var seedData = ((IEnumerable)hasDataMethod?.Invoke(instance, new object[] { de }))?.Cast<object>();
             if (seedData == null) continue;
-
+            var seedDataList = seedData.ToList();
             var entityType = seedType.GetInterfaces().First().GetGenericArguments().First();
 
             var Model = de.GetSysModels(null, entityType.Name).FirstOrDefault();
-            if (Model!=null)
+            if (Model != null)
             {
-                var ignoreUpdate = hasDataMethod.GetCustomAttribute<IgnoreUpdateAttribute>();
+                List<SysField> Fields = de.GetSysFields(entityType.Name);
+                IgnoreUpdateAttribute ignoreUpdate = hasDataMethod.GetCustomAttribute<IgnoreUpdateAttribute>();
                 if (ignoreUpdate == null)
                 {
-                    de.AddElseUpdate(Model.Name, seedData.ToList());
+                    de.AddElseUpdate(Model.Name, seedDataList);
                 }
                 else
                 {
-                    // 提取 Id 属性值
-                    List<string> ids = new List<string>();
-                    foreach (var item in seedData)
+                    List<string> Keys = ignoreUpdate.Keys?.ToList() ?? new List<string> { "Id" };
+                    foreach (var item in seedData.ToList())
                     {
-                        PropertyInfo idProperty = item.GetType().GetProperty("Id");
-                        if (idProperty != null)
+                        var conModels = new List<IConditionalModel>();
+                        foreach (var Key in Keys)
                         {
-                            object idValue = idProperty.GetValue(item);
-                            ids.Add(idValue?.ToString());
+                            string tType = Fields.FirstOrDefault(t => t.Name == Key).tType;
+                            object idValue = item.GetType().GetProperty(Key).GetValue(item);
+                            conModels.Add(new ConditionalModel
+                            {
+                                FieldName = Key,
+                                ConditionalType = ConditionalType.Equal,
+                                FieldValue = idValue.ToString(),
+                                CSharpTypeName = tType
+                            });
+                        }
+                        var ExistRes = de.Search(Model.Name).Where(conModels).ToList().Count() > 0;
+                        if (ExistRes)
+                        {
+                            seedDataList.Remove(item); // 如果ExistRes为true，则从seedData中移除当前项
                         }
                     }
-                    var StrIds = string.Join(",", ids);
-                    var conModels = new List<IConditionalModel>
-                    {
-                        new ConditionalModel { FieldName = "\"Id\"", ConditionalType = ConditionalType.In, FieldValue = StrIds }
-                    };
-                    var ExistRes = de.Search(Model.Name).Where(conModels).ToList();
-                    var ExistIds = ExistRes.Select(u => u.Id).ToList();
-                    seedData = seedData.Where(item =>
-                    {
-                        // 使用反射获取 Id 属性值
-                        PropertyInfo idProperty = item.GetType().GetProperty("Id");
-                        if (idProperty != null)
-                        {
-                            object idValue = idProperty.GetValue(item);
-                            return !ExistIds.Contains(idValue);
-                        }
-                        return true; // 如果无法获取 Id 属性值，则保留该记录
-                    }).ToList();
-                    de.BatchCreate(Model.Name, seedData.ToList());
+                    de.BatchCreate(Model.Name, seedDataList);
                 }
             }
         }
@@ -421,7 +416,8 @@ public static class ModelDbManager
             PropertyInfo = propertyInfo
         };
     }
-    public static bool IsNullable(PropertyInfo prop, YhhColumn yhh, DataElement de)
+
+    public static bool IsNullable(PropertyInfo prop, YhhColumn yhh, SysField field)
     {
         if (prop.Name == "Category")
         {
@@ -430,7 +426,7 @@ public static class ModelDbManager
 
         bool isNullable = (new NullabilityInfoContext().Create(prop).WriteState is NullabilityState.Nullable) == false;
 
-        if (prop.Name.ToLower() == "id")
+        if (prop.Name.ToLower() == "id" || field.tType == "Boolean")
         {
             return false;
         }
@@ -444,6 +440,5 @@ public static class ModelDbManager
         //    return false;
         //}
         return isNullable;
-
     }
 }

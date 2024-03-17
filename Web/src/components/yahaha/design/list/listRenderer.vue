@@ -516,6 +516,17 @@ const setFilterParams = async (visible: any) => {
 const cleanQueryValue = () => {
   refreshCurrentTagsView();
 };
+
+const getUserFilterSchemes = async () => {
+  const params = {
+    sysModel: props.modelId,
+    listDesign: props.desId ?? 0,
+  }
+  const res = await userFilterSchemes(params);
+  filterSchemes.value = res.data.result;
+  primaryFields.value = JSON.parse(filterSchemes.value?.DefaultFields ?? "[]");
+}
+
 /**初始化查询字段 */
 const createfilterParams = async (force: boolean = false) => {
   const filterFields = (items: any[], included: boolean) => {
@@ -540,15 +551,7 @@ const createfilterParams = async (force: boolean = false) => {
   }
 };
 
-const getUserFilterSchemes = async () => {
-  const params = {
-    sysModel: props.modelId,
-    listDesign: props.desId ?? 0,
-  }
-  const res = await userFilterSchemes(params);
-  filterSchemes.value = res.data.result;
-  primaryFields.value = JSON.parse(filterSchemes.value?.DefaultFields ?? "[]");
-}
+createfilterParams();
 
 const saveUserFilterSchemesDebounce = debounce(
   async function () {
@@ -634,7 +637,6 @@ const fetchData = async () => {
   // 开始查询相关
   loading.value = true;
   queryParams.value.model = props.modelId;
-  await createfilterParams();
   compFilterParams();
   var res = await api.generalListData(Object.assign(queryParams.value, tableParams.value));
   listValue.value = res.data.result?.items ?? [];
@@ -721,6 +723,20 @@ watch(
   }
 );
 
+watch(
+  () => type.value,
+  (nval) => {
+    if (nval === 5) {
+      mainListKey.value++;
+      nextTick(() => {
+        columnDrop();
+      })
+    }
+  },
+  {
+    deep: true, immediate: true
+  }
+);
 defineExpose({
   getListConfig,
 })
